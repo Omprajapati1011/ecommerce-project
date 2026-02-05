@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import pool from "./configs/db.js";
+import userRoute from "./routes/NewUser.route.js";
 
 dotenv.config();
 const app = express();
@@ -10,9 +11,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/", (req, res) => {
- res.send("Om prajapati");
+  res.send("Om prajapati");
 });
 
-app.listen(port, ()=>{
-      console.log(`Server is running on http://localhost:${port}`);
+app.use('/api/user',userRoute);
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
