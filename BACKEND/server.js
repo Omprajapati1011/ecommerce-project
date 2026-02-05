@@ -5,6 +5,13 @@
 import express from "express"
 import dotenv from "dotenv"
 
-// you are om prajapati
-// hi i  am solanki jignesh 
->>>>>>>>> Temporary merge branch 2
+dotenv.config();
+
+const app = express();
+
+const Port = process.env.PORT;
+
+
+app.listen(Port,()=>{
+    console.log(`Server is running on http://localhost:${Port}`);
+})
