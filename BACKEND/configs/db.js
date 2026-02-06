@@ -13,6 +13,7 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+<<<<<<< HEAD
 pool.getConnection((err, connection) => {
   if (err) {
     console.log("connection failed done", err.message);
@@ -21,5 +22,18 @@ pool.getConnection((err, connection) => {
     connection.release();
   }
 });
+=======
+const testConnection = async () => {
+  try {
+    const connection = await pool.getConnection();
+    console.log("DB connection Done");
+    connection.release();
+  } catch (err) {
+    console.log("Connection failed:", err.message);
+  }
+};
+
+testConnection();
+>>>>>>> 22d17abb44e8924ee647fe624c149ec88701b295
 
 export default pool;
