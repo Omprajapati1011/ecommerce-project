@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "author": "om",
   "license": "ISC",
@@ -19,5 +20,6 @@
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.16.2",
     "nodemon": "^3.1.11"
-  }
+  },
+  "keywords": []
 }
