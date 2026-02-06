@@ -1,34 +1,44 @@
 import pool from "../configs/db.js";
+import bcrypt from "bcrypt";
+import { registerUserModel } from "../models/User.model.js";
 
-export const registerUser = (req, res) => {
+export const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    pool.query(
-      `insert into user_master (name,email,password,created_by) values (?,?,?,?)`,
-      [name, email, password, 1],
-      (err, result) => {
-        if (result.affectedRows === 0) {
-          return res.json({
-            success: false,
-            message: "User not created successfully",
-          });
-        }
-        if (err) {
-          console.log(err);
-        }
-      },
-    );
+    // 1️ Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    return res.json({
+    let data = {
+      name,
+      email,
+      password: hashedPassword,
+      created_by: 1,
+    };
+
+    // 2️ Insert into database
+    const result = await registerUserModel(data);
+
+    console.log(result);
+
+    // 3️ Check if inserted
+    if (result.affectedRows === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "User not created",
+      });
+    }
+
+    // 4️ Success response
+    return res.status(201).json({
       success: true,
       message: "User created successfully",
     });
   } catch (err) {
     console.log(err);
-    res.status(200).json({
+    return res.status(500).json({
       success: false,
-      message: "Database Error",
+      message: "Database error",
     });
   }
 };
