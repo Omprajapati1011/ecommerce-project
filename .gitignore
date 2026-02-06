@@ -1,2 +1,5 @@
 node_modules/
 .env
+
+# Auto-generated commented schema (for learning/documentation only)
+BACKEND/seeders/db_schema_commented.sql
