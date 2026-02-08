@@ -67,19 +67,67 @@ const Product = {
 
   /* =========================
    Soft Delete Product
-========================= */
-softDelete: (productId, updatedBy, conn = db) => {
+  ========================= */
+  softDelete: (productId, updatedBy, conn = db) => {
+    const sql = `
+      UPDATE product_master
+      SET is_deleted = 1,
+          is_active = 0,
+          updated_by = ?
+      WHERE product_id = ? AND is_deleted = 0
+    `;
+
+    return conn.execute(sql, [updatedBy, productId]);
+  },
+
+  findAll: () => {
+    return db.execute(`
+      SELECT *
+      FROM product_master
+      WHERE is_deleted = 0 AND is_active = 1
+      ORDER BY created_at DESC
+    `);
+  },
+
+  findById: (id) => {
+    return db.execute(`
+      SELECT *
+      FROM product_master
+      WHERE product_id = ? AND is_deleted = 0
+    `, [id]);
+  },
+
+  update: (id, data) => {
+  const fields = [];
+  const values = [];
+
+  for (const key in data) {
+    if (data[key] !== undefined) {
+      fields.push(`${key} = ?`);
+      values.push(data[key]);
+    }
+  }
+
+  if (!fields.length) return;
+
   const sql = `
     UPDATE product_master
-    SET is_deleted = 1,
-        is_active = 0,
-        updated_by = ?
+    SET ${fields.join(", ")}
     WHERE product_id = ? AND is_deleted = 0
   `;
 
-  return conn.execute(sql, [updatedBy, productId]);
-}
+  values.push(id);
 
+  return db.execute(sql, values);
+},
+
+  updateStatus: (id, is_active) => {
+    return db.execute(`
+      UPDATE product_master
+      SET is_active = ?
+      WHERE product_id = ? AND is_deleted = 0
+    `, [is_active, id]);
+  },
 
 };
 

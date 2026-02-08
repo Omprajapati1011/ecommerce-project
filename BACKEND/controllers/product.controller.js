@@ -80,3 +80,65 @@ export const deleteProduct = async (req, res) => {
     });
   }
 };
+
+/* =========================
+  Get All Products
+========================= */
+export const getAllProducts = async (req, res) => {
+  try {
+    const [products] = await Product.findAll();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* =========================
+  Get Product By ID
+========================= */
+export const getProductById = async (req, res) => {
+  try {
+    const [rows] = await Product.findById(req.params.id);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* =========================
+  Update Product
+========================= */
+export const updateProduct = async (req, res) => {
+  const USER_ID = 1;
+
+  try {
+    await Product.update(req.params.id, {
+      ...req.body,
+      updated_by: USER_ID
+    });
+
+    res.json({ message: "Product updated successfully" });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+/* =========================
+  Update Product Status
+========================= */
+
+export const updateProductStatus = async (req, res) => {
+  try {
+    await Product.updateStatus(req.params.id, req.body.is_active);
+    res.json({ message: 'Product status updated' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
