@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import pool from "./configs/db.js";
-import userRoute from "./routes/NewUser.route.js";
+import userRoute from "./routes/User.route.js";
 
 dotenv.config();
 const app = express();
