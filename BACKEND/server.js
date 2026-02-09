@@ -14,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 //   res.send("Om prajapati");
 // });
 
-app.use("/api/user",userRoute);
+app.use("/api/user", userRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
