@@ -10,7 +10,7 @@ import {
   viewUserModel,
   updateUserPassword,
   getUserByIdforpassword,
-} from "../models/User.model.js";
+} from "../models/user.model.js";
 import {
   created,
   badRequest,
@@ -21,7 +21,7 @@ import {
   notFound,
 } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
-import pool from "../configs/db.js";
+// import pool from "../configs/db.js";
 
 //user
 export const registerUser = async (req, res) => {
@@ -134,6 +134,8 @@ export const updateProfile = async (req, res) => {
   try {
     const userId = req.user?.id;
 
+    console.log(userId);
+
     if (!userId) {
       return badRequest(res, "Invalid user");
     }
@@ -191,7 +193,7 @@ export const deleteByUser = async (req, res) => {
   }
 };
 
-export const updatePassword = async (req, res) => {
+export const changePassword = async (req, res) => {
   try {
     const id = req.user.id;
     const { oldPassword, newPassword, confirmPassword } = req.body;
@@ -204,12 +206,10 @@ export const updatePassword = async (req, res) => {
     }
 
     if (newPassword !== confirmPassword) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "New password and confirm password do not match",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirm password do not match",
+      });
     }
 
     // 2️ Get user password from DB
@@ -231,12 +231,10 @@ export const updatePassword = async (req, res) => {
     // 4️ Check if new password is same as old
     const isSameAsOld = await bcrypt.compare(newPassword, user.password);
     if (isSameAsOld) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "New password cannot be same as old password",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be same as old password",
+      });
     }
 
     // 5️ Hash new password
@@ -298,8 +296,9 @@ export const getProfileById = async (req, res) => {
 export const deleteUserByAdmin = async (req, res) => {
   try {
     const userId = req.params.id;
+    const adminId = req.user.id;
 
-    const result = await deleteUserByAdminModel(userId);
+    const result = await deleteUserByAdminModel(userId, adminId);
 
     if (result.affectedRows === 0) {
       return notFound(res, "User not found or already deleted");

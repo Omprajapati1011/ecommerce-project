@@ -6,22 +6,105 @@ import {
   getProfileById,
   loginUser,
   registerUser,
-  updatepassword,
+  changePassword,
   updateProfile,
   viewProfile,
 } from "../controllers/User.controller.js";
 import { auth, adminOnly } from "../middlewares/auth.middleware.js";
+import { validate } from "../middlewares/Validations.middleware.js";
+import { updateProfileSchema } from "../validations/user.validation.js";
+import { updatePasswordSchema } from "../validations/user.validation.js";
+import { registerSchema } from "../validations/user.validation.js";
+import { loginSchema } from "../validations/user.validation.js";
+import { idParamSchema } from "../validations/user.validation.js";
+import {
+  addUserAddress,
+  deleteAddress,
+  setDefaultAddress,
+  showAllUserAddresses,
+  updateAddress,
+} from "../controllers/User.address.controller.js";
 
 const userRoute = express.Router();
 
-userRoute.post("/create-user", registerUser);
-userRoute.post("/login-user", loginUser);
+// ================= USER ROUTES =================
+
+// Register
+userRoute.post("/create-user", validate(registerSchema), registerUser);
+
+// Login
+userRoute.post("/login-user", validate(loginSchema), loginUser);
+
+// View own profile
 userRoute.get("/view-profile", auth, viewProfile);
-userRoute.put("/update", auth, updateProfile);
+
+// Update profile
+userRoute.put("/update", auth, validate(updateProfileSchema), updateProfile);
+
+// Delete own account
 userRoute.delete("/delete", auth, deleteByUser);
+
+// Update password
+userRoute.patch(
+  "/update-password",
+  auth,
+  validate(updatePasswordSchema),
+  changePassword,
+);
+
+// ================= USER ADDRESS ROUTES =================
+
+//add user address
+userRoute.post("/add-address", auth, addUserAddress);
+
+//set address default
+userRoute.patch(
+  "/setDefault/:id",
+  auth,
+  validate(idParamSchema, "params"),
+  setDefaultAddress,
+);
+
+//get all user addresses
+userRoute.get("/show-addresses", auth, showAllUserAddresses);
+
+//delete user address
+userRoute.delete(
+  "/delete-address/:id",
+  auth,
+  validate(idParamSchema, "params"),
+  deleteAddress,
+);
+
+//update user address
+userRoute.patch(
+  "/update-address/:id",
+  auth,
+  validate(idParamSchema, "params"),
+  updateAddress,
+);
+
+// ================= ADMIN ROUTES =================
+
+// Get all users
 userRoute.get("/view-users", auth, adminOnly, getAllUsers);
-userRoute.get("/view-user/:id", auth, adminOnly, getProfileById);
-userRoute.delete("/delete/:id", auth, adminOnly, deleteUserByAdmin);
-userRoute.patch("/update-password", auth, updatepassword);
+
+// Get single user by ID
+userRoute.get(
+  "/view-user/:id",
+  auth,
+  adminOnly,
+  validate(idParamSchema, "params"),
+  getProfileById,
+);
+
+// Delete user by admin
+userRoute.delete(
+  "/delete/:id",
+  auth,
+  adminOnly,
+  validate(idParamSchema, "params"),
+  deleteUserByAdmin,
+);
 
 export default userRoute;

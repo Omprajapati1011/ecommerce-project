@@ -35,19 +35,19 @@ export const viewUserModel = async (data) => {
 export const updateProfileModel = async (data, userId) => {
   const sql = `
     UPDATE user_master
-    SET ?, updated_at = NOW()
+    SET ?, updated_at = NOW(), updated_by = ?
     WHERE user_id = ? AND is_deleted = 0
   `;
 
-  const [result] = await pool.query(sql, [data, userId]);
+  const [result] = await pool.query(sql, [data, userId, userId]);
   return result;
 };
 
 //users can delete their account
 export const deleteByUserModel = async (id) => {
-  const sql = `UPDATE user_master SET is_deleted = true WHERE user_id = ?`;
+  const sql = `UPDATE user_master SET is_deleted = true AND updated_by = ? WHERE user_id = ?`;
 
-  const [result] = await pool.query(sql, [id]);
+  const [result] = await pool.query(sql, [id, id]);
 
   return result;
 };
@@ -56,15 +56,15 @@ export const deleteByUserModel = async (id) => {
 export const getUserByIdforpassword = async (id) => {
   const [rows] = await pool.query(
     `SELECT password FROM user_master WHERE user_id = ?`,
-    [id]
+    [id],
   );
   return rows[0]; // returns undefined if not found
 };
 
 export const updateUserPassword = async (id, newPassword) => {
   const [result] = await pool.query(
-    `UPDATE user_master SET password = ? WHERE user_id = ?`,
-    [newPassword, id]
+    `UPDATE user_master SET password = ? AND update_by = ? WHERE user_id = ?`,
+    [newPassword, id, id],
   );
   return result.affectedRows;
 };
@@ -90,10 +90,10 @@ export const getUserById = async (id) => {
 };
 
 //admin can delete user
-export const deleteUserByAdminModel = async (id) => {
-  const sql = `Update user_master SET is_deleted = true WHERE user_id = ?`;
+export const deleteUserByAdminModel = async (id, adminId) => {
+  const sql = `Update user_master SET is_deleted = true AND updated_by = ? WHERE user_id = ?`;
 
-  const [result] = await pool.query(sql, [id]);
+  const [result] = await pool.query(sql, [adminId, id]);
 
   return result;
 };
