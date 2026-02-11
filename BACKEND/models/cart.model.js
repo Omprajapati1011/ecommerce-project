@@ -44,7 +44,7 @@ async function getCartItemsWithProduct(cartId) {
             mt.modifier_value
        FROM cart_items ci
        JOIN product_master pm ON pm.product_id = ci.product_id
-       LEFT JOIN product_portion pp ON pp.product_portion_id = ci.product_portion_id
+       LEFT JOIN product_portion pp ON pp.product_portion_id = ci.product_portion_id AND pp.product_id = ci.product_id
        LEFT JOIN portion_master por ON por.portion_id = pp.portion_id
        LEFT JOIN modifier_master mt ON mt.modifier_id = ci.modifier_id
       WHERE ci.cart_id = ? AND ci.is_deleted = 0

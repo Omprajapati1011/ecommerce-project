@@ -274,9 +274,12 @@ async function addItemToCart(req, res) {
 
         itemPrice = Number(defaultPortion.price);
 
-      }
+      } else {
 
-      // If no portion exists, use product price
+        // If no portion exists, use base product price
+        finalPortionId = null;
+        itemPrice = Number(pricing.price);
+      }
 
     }
 
