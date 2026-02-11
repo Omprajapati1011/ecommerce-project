@@ -44,7 +44,7 @@ app.get("/", (req, res) => {
 });
 
 // API Routes
-app.use("/api/users", userRoutes);
+app.use("/api/users", userRoute);
 //app.use("/api/payments", paymentRoutes);
 // Add more routes here as you create them:
 // app.use("/api/products", productRoutes);
