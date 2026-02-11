@@ -1,40 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-
-// Import Routes
-// import paymentRoutes from "./routes/payments.route.js";
-import userRoute from "./routes/User.route.js";
-
-// Load environment variables
-dotenv.config();
-
-// Initialize Express app
-const app = express();
-const port = process.env.SERVER_PORT || 3000;
-
-// ============================================================================
-// MIDDLEWARE
-// ============================================================================
-
-// Parse JSON request bodies
-app.use(express.json());
-
-// Parse URL-encoded request bodies
-app.use(express.urlencoded({ extended: true }));
-
-// ============================================================================
-// ROUTES
-// ============================================================================
-
-// Health check / Welcome route
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "E-Commerce Accrete API is running",
-    version: "1.0.0",
-    endpoints: {
-      users: "/api/users",
-      // payments: "/api/payments",
+      payments: "/api/payments",
       // products: "/api/products",
       // categories: "/api/categories",
       // cart: "/api/cart",
@@ -44,8 +10,8 @@ app.get("/", (req, res) => {
 });
 
 // API Routes
-app.use("/api/users", userRoute);
-// app.use("/api/payments", paymentRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Add more routes here as you create them:
 // app.use("/api/products", productRoutes);
@@ -83,5 +49,13 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
   console.log(`API Endpoints:`);
   console.log(`  - Users: http://localhost:${port}/api/users`);
-  // console.log(`  - Payments: http://localhost:${port}/api/payments`);
+  console.log(`  - Payments: http://localhost:${port}/api/payments`);
+// app.get("/", (req, res) => {
+//   res.send("Om prajapati");
+// });
+
+app.use("/api/user", userRoute);
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
