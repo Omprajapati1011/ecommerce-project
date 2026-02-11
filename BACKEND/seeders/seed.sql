@@ -30,42 +30,20 @@ TRUNCATE TABLE user_master;
 INSERT INTO user_master (user_id, name, email, password, role, is_deleted, created_by, updated_by) VALUES
   (1, 'Admin User',    'admin@example.com', 'admin123',    'admin',    0, NULL, NULL),
   (2, 'Rahul Sharma',  'rahul@example.com', 'password123', 'customer', 0, 1,    1),
-  (3, 'Priya Singh',   'priya@example.com', 'password123', 'customer', 0, 1,    1),
-  (4, 'Amit Patel',    'amit@example.com',  'password123', 'customer', 0, 1,    1),
-  (5, 'Neha Gupta',    'neha@example.com',  'password123', 'customer', 0, 1,    1),
-  (6, 'Vikram Singh',  'vikram@example.com','password123', 'customer', 0, 1,    1);
+  (3, 'Priya Singh',   'priya@example.com', 'password123', 'customer', 0, 1,    1);
 
 -- =====================
 -- 2. User Addresses
 -- =====================
 INSERT INTO user_addresses (address_id, user_id, address_type, full_name, phone, address_line1, address_line2, city, state, postal_code, country, is_default, is_deleted, created_by, updated_by) VALUES
   (1, 2, 'shipping', 'Rahul Sharma', '9876543210', '101 MG Road',      'Near Metro Station',  'Bengaluru', 'KA', '560001', 'India', 1, 0, 2, 2),
-  (2, 3, 'shipping', 'Priya Singh',  '9123456780', '202 Marine Drive', 'Sea View Apartments', 'Mumbai',    'MH', '400001', 'India', 1, 0, 3, 3),
-  (3, 4, 'shipping', 'Amit Patel',    '9876543211', '45 Park Street',   'Sector 62',           'Noida',     'UP', '201301', 'India', 1, 0, 4, 4),
-  (4, 5, 'shipping', 'Neha Gupta',    '9876543212', '78 Connaught Place', 'Central Market',     'New Delhi', 'DL', '110001', 'India', 1, 0, 5, 5),
-  (5, 6, 'shipping', 'Vikram Singh',  '9876543213', '123 Tech Park',    'IT Corridor',         'Hyderabad', 'TG', '500081', 'India', 1, 0, 6, 6);
+  (2, 3, 'shipping', 'Priya Singh',  '9123456780', '202 Marine Drive', 'Sea View Apartments', 'Mumbai',    'MH', '400001', 'India', 1, 0, 3, 3);
 
 -- =====================
 -- 3. Categories
 -- =====================
 INSERT INTO category_master (category_id, category_name, parent_id, is_deleted, created_by, updated_by) VALUES
   (1,  'Electronics',         NULL, 0, 1, 1),
-  (43, 'Laptops',             1,    0, 1, 1),
-  (44, 'Gaming Laptops',      43,   0, 1, 1),
-  (45, 'Business Laptops',    43,   0, 1, 1),
-  (46, 'Tablets',            1,    0, 1, 1),
-  (47, 'iPads',              46,   0, 1, 1),
- (48, 'Android Tablets',     46,   0, 1, 1),
-  (49, 'Audio',              1,    0, 1, 1),
-  (50, 'Speakers',           49,   0, 1, 1),
-  (51, 'Earbuds',            49,   0, 1, 1),
-  (52, 'Gaming',             NULL, 0, 1, 1),
-  (53, 'Gaming Consoles',    52,   0, 1, 1),
-  (54, 'Gaming Accessories', 52,   0, 1, 1),
-  (55, 'Home Appliances',    NULL, 0, 1, 1),
-  (56, 'Refrigerators',      55,   0, 1, 1),
-  (57, 'Washing Machines',   55,   0, 1, 1),
-  (58, 'Air Conditioners',   55,   0, 1, 1);
   (2,  'Phones',              1,    0, 1, 1),
   (3,  'Android Phones',      2,    0, 1, 1),
   (4,  'iPhones',             2,    0, 1, 1),
@@ -113,19 +91,6 @@ INSERT INTO category_master (category_id, category_name, parent_id, is_deleted, 
 -- =====================
 INSERT INTO product_master (product_id, name, display_name, description, short_description, price, discounted_price, stock, category_id, is_active, is_deleted, created_by, updated_by) VALUES
   (1,  'iphone_15_pro_max',       'Apple iPhone 15 Pro Max',                  'Flagship Apple smartphone with A17 chip and ProMotion display.',          'iPhone 15 Pro Max 256 GB',    159999.00, 149999.00, 25,  16, 1, 0, 1, 1),
-  (21, 'macbook_air_m2',          'Apple MacBook Air M2 13-inch',            'Lightweight MacBook with M2 chip and long battery life.',              'MacBook Air M2 256GB',        99999.00,  94999.00,  15,  44, 1, 0, 1, 1),
-  (22, 'macbook_pro_14',          'Apple MacBook Pro 14-inch M3',            'Powerful MacBook Pro with M3 chip for professionals.',               'MacBook Pro 14 512GB',       199999.00, 189999.00, 10,  45, 1, 0, 1, 1),
-  (23, 'dell_xps_15',              'Dell XPS 15',                            'Premium Windows laptop with InfinityEdge display.',                     'Dell XPS 15 32GB RAM',       149999.00, 139999.00, 12,  44, 1, 0, 1, 1),
-  (24, 'ipad_pro_12_9',           'Apple iPad Pro 12.9-inch M2',            'Powerful iPad with M2 chip and Liquid Retina XDR display.',           'iPad Pro 12.9 256GB',        119999.00, 109999.00, 20,  47, 1, 0, 1, 1),
-  (25, 'samsung_tab_s9',          'Samsung Galaxy Tab S9',                  'Premium Android tablet with S Pen.',                                  'Galaxy Tab S9 128GB',         64999.00,  59999.00,  25,  48, 1, 0, 1, 1),
-  (26, 'sony_wh_1000xm4',        'Sony WH-1000XM4 Wireless Headphones',     'Industry-leading noise cancellation headphones.',                       'Sony WH-1000XM4',             29999.00,  27999.00,  30,  26, 1, 0, 1, 1),
-  (27, 'bose_soundlink',         'Bose SoundLink Flex Bluetooth Speaker', 'Portable Bluetooth speaker with rugged design.',                    'Bose SoundLink Flex',         14999.00,  12999.00,  50,  50, 1, 0, 1, 1),
-  (28, 'airpods_pro_2',          'Apple AirPods Pro 2',                    'Active noise cancellation earbuds with spatial audio.',                 'AirPods Pro 2',              24999.00,  22999.00,  60,  51, 1, 0, 1, 1),
-  (29, 'ps5_digital',            'Sony PlayStation 5 Digital Edition',     'Next-gen gaming console with stunning graphics.',                     'PS5 Digital Edition',        54999.00,  49999.00,  25,  53, 1, 0, 1, 1),
-  (30, 'xbox_series_x',          'Xbox Series X',                         'Powerful gaming console with Game Pass.',                              'Xbox Series X 1TB',          54999.00,  49999.00,  20,  53, 1, 0, 1, 1),
-  (31, 'lg_fridge_654',           'LG 654L Frost-Free Refrigerator',        'Large capacity refrigerator with smart features.',                      'LG 654L Frost-Free',         64999.00,  59999.00,  15,  56, 1, 0, 1, 1),
-  (32, 'samsung_washing_7kg',    'Samsung 7kg Front Load Washing Machine', 'Fully automatic washing machine with AI control.',                     'Samsung 7kg Front Load',      29999.00,  26999.00,  25,  57, 1, 0, 1, 1),
-  (33, 'daikin_ac_1_5ton',        'Daikin 1.5 Ton Split AC',              'Energy efficient split AC with inverter technology.',                  'Daikin 1.5 Ton Split AC',     44999.00,  39999.00,  20,  58, 1, 0, 1, 1);
   (2,  'iphone_14',               'Apple iPhone 14',                          'Powerful Apple smartphone with advanced camera system.',                  'iPhone 14 128 GB',            79999.00,  74999.00,  40,  15, 1, 0, 1, 1),
   (3,  'samsung_galaxy_s24_ultra','Samsung Galaxy S24 Ultra',                 'Samsung flagship with high refresh rate AMOLED and quad camera.',         'Galaxy S24 Ultra 256 GB',     139999.00, 129999.00, 30,  8,  1, 0, 1, 1),
   (4,  'samsung_galaxy_a55',      'Samsung Galaxy A55',                       'Mid-range Samsung Galaxy A-series smartphone.',                           'Galaxy A55 128 GB',           34999.00,  29999.00,  60,  9,  1, 0, 1, 1),
@@ -159,13 +124,6 @@ INSERT INTO product_categories (product_id, category_id, created_by, updated_by)
   (6, 1, 1, 1), (6, 2, 1, 1), (6, 3, 1, 1), (6, 11, 1, 1),
   (7, 1, 1, 1), (7, 2, 1, 1), (7, 3, 1, 1), (7, 12, 1, 1),
   (8, 1, 1, 1), (8, 2, 1, 1), (8, 3, 1, 1), (8, 13, 1, 1),
-  -- Laptops -> Electronics + Laptops + leaf
-  (21, 1, 1, 1), (21, 43, 1, 1), (21, 45, 1, 1),
-  (22, 1, 1, 1), (22, 43, 1, 1), (22, 45, 1, 1),
-  (23, 1, 1, 1), (23, 43, 1, 1), (23, 44, 1, 1),
-  -- Tablets -> Electronics + Tablets + leaf
-  (24, 1, 1, 1), (24, 46, 1, 1), (24, 47, 1, 1),
-  (25, 1, 1, 1), (25, 46, 1, 1), (25, 48, 1, 1),
   -- TVs -> Electronics + leaf
   (9,  1, 1, 1), (9,  17, 1, 1), (9,  18, 1, 1),
   (10, 1, 1, 1), (10, 17, 1, 1), (10, 19, 1, 1),
@@ -173,18 +131,6 @@ INSERT INTO product_categories (product_id, category_id, created_by, updated_by)
   (11, 1, 1, 1), (11, 20, 1, 1), (11, 21, 1, 1),
   (12, 1, 1, 1), (12, 20, 1, 1), (12, 21, 1, 1),
   (13, 1, 1, 1), (13, 20, 1, 1), (13, 22, 1, 1),
-  -- Audio -> Electronics + Audio + leaf
-  (26, 1, 1, 1), (26, 23, 1, 1), (26, 26, 1, 1),
-  (27, 1, 1, 1), (27, 23, 1, 1), (27, 49, 1, 1), (27, 50, 1, 1),
-  (28, 1, 1, 1), (28, 23, 1, 1), (28, 49, 1, 1), (28, 51, 1, 1),
-  (15, 1, 1, 1), (15, 23, 1, 1), (15, 26, 1, 1),
-  -- Gaming -> Gaming + Consoles
-  (29, 52, 1, 1), (29, 53, 1, 1),
-  (30, 52, 1, 1), (30, 53, 1, 1),
-  -- Home Appliances -> leaf
-  (31, 55, 1, 1), (31, 56, 1, 1),
-  (32, 55, 1, 1), (32, 57, 1, 1),
-  (33, 55, 1, 1), (33, 58, 1, 1),
   -- Headphones -> Electronics + Accessories + leaf
   (14, 1, 1, 1), (14, 23, 1, 1), (14, 26, 1, 1),
   (15, 1, 1, 1), (15, 23, 1, 1), (15, 26, 1, 1),
@@ -214,18 +160,7 @@ INSERT INTO portion_master (portion_id, portion_value, description, is_active, i
   (13, 'UK 7',   'Shoe size: UK 7',   1, 0, 1, 1),
   (14, 'UK 8',   'Shoe size: UK 8',   1, 0, 1, 1),
   (15, 'UK 9',   'Shoe size: UK 9',   1, 0, 1, 1),
-  (16, 'UK 10',  'Shoe size: UK 10',  1, 0, 1, 1),
-  (17, '8 GB',   'RAM: 8 GB',         1, 0, 1, 1),
-  (18, '16 GB',  'RAM: 16 GB',        1, 0, 1, 1),
-  (19, '32 GB',  'RAM: 32 GB',        1, 0, 1, 1),
-  (20, '64 GB',  'RAM: 64 GB',        1, 0, 1, 1),
-  (21, '512 GB', 'Storage: 512 GB',   1, 0, 1, 1),
-  (22, '1 TB',   'Storage: 1 TB',     1, 0, 1, 1),
-  (23, '2 TB',   'Storage: 2 TB',     1, 0, 1, 1),
-  (24, '11 inch','Display: 11 inch',  1, 0, 1, 1),
-  (25, '12.9 inch','Display: 12.9 inch',1, 0, 1, 1),
-  (26, 'Wi-Fi',  'Connectivity: Wi-Fi',1, 0, 1, 1),
-  (27, 'Cellular','Connectivity: Cellular',1, 0, 1, 1);
+  (16, 'UK 10',  'Shoe size: UK 10',  1, 0, 1, 1);
 
 -- =====================
 -- 7. Product Portions (product + portion = price, stock)
@@ -282,35 +217,7 @@ INSERT INTO product_portion (product_portion_id, product_id, portion_id, price, 
   -- Women Sneakers: UK 6, UK 7, UK 8
   (35, 20, 12, 2799.00,   2299.00,   35,  1, 0, 1, 1),
   (36, 20, 13, 2799.00,   2299.00,   40,  1, 0, 1, 1),
-  (37, 20, 14, 2799.00,   2299.00,   35,  1, 0, 1, 1),
-  -- MacBook Air M2: 256GB, 512GB
-  (38, 21, 2,  99999.00,  94999.00,  15, 1, 0, 1, 1),
-  (39, 21, 21, 119999.00, 114999.00, 10, 1, 0, 1, 1),
-  -- MacBook Pro 14: 512GB, 1TB
-  (40, 22, 21, 199999.00, 189999.00, 10, 1, 0, 1, 1),
-  (41, 22, 22, 229999.00, 219999.00, 8,  1, 0, 1, 1),
-  -- Dell XPS 15: 16GB, 32GB
-  (42, 23, 17, 149999.00, 139999.00, 12, 1, 0, 1, 1),
-  (43, 23, 18, 179999.00, 169999.00, 8,  1, 0, 1, 1),
-  -- iPad Pro 12.9: 256GB, 512GB
-  (44, 24, 21, 119999.00, 109999.00, 20, 1, 0, 1, 1),
-  (45, 24, 22, 139999.00, 129999.00, 15, 1, 0, 1, 1),
-  -- Galaxy Tab S9: 128GB, 256GB
-  (46, 25, 1,  64999.00,  59999.00,  25, 1, 0, 1, 1),
-  (47, 25, 2,  74999.00,  69999.00,  20, 1, 0, 1, 1),
-  -- Apple Watch Series 9: 41mm, 45mm
-  (18, 11, 5,  40999.00,  38999.00,  15, 1, 0, 1, 1),
-  (19, 11, 6,  45999.00,  42999.00,  12, 1, 0, 1, 1),
-  -- Galaxy Watch6: 44mm
-  (20, 12, 7,  28999.00,  25999.00,  20, 1, 0, 1, 1),
-  -- Women Floral Dress: S, M, L
-  (32, 19, 8,  2499.00,   1999.00,   50,  1, 0, 1, 1),
-  (33, 19, 9,  2499.00,   1999.00,   60,  1, 0, 1, 1),
-  (34, 19, 10, 2499.00,   1999.00,   50,  1, 0, 1, 1),
-  -- Women Sneakers: UK 6, UK 7, UK 8
-  (35, 20, 12, 2799.00,   2299.00,   35, 1, 0, 1, 1),
-  (36, 20, 13, 2799.00,   2299.00,   40, 1, 0, 1, 1),
-  (37, 20, 14, 2799.00,   2299.00,   35, 1, 0, 1, 1);
+  (37, 20, 14, 2799.00,   2299.00,   35,  1, 0, 1, 1);
 
 -- =====================
 -- 8. Modifiers (global - colors, RAM, strap materials, etc.)
@@ -346,22 +253,7 @@ INSERT INTO modifier_master (modifier_id, modifier_name, modifier_value, additio
   (21, 'Color',          'Grey/Blue',        0.00,    1, 0, 1, 1),
   -- Dress patterns
   (22, 'Pattern',        'Floral Pink',      0.00,    1, 0, 1, 1),
-  (23, 'Pattern',        'Floral Blue',      0.00,    1, 0, 1, 1),
-  -- Laptop colors
-  (24, 'Color',          'Space Gray',       0.00,    1, 0, 1, 1),
-  (25, 'Color',          'Silver',           0.00,    1, 0, 1, 1),
-  -- Tablet connectivity
-  (26, 'Connectivity',   'Wi-Fi',            0.00,    1, 0, 1, 1),
-  (27, 'Connectivity',   'Cellular',         5000.00, 1, 0, 1, 1),
-  -- Speaker colors
-  (28, 'Color',          'Black',            0.00,    1, 0, 1, 1),
-  (29, 'Color',          'Blue',             0.00,    1, 0, 1, 1),
-  -- Earbud colors
-  (30, 'Color',          'White',            0.00,    1, 0, 1, 1),
-  (31, 'Color',          'Black',            0.00,    1, 0, 1, 1),
-  -- Console colors
-  (32, 'Color',          'White',            0.00,    1, 0, 1, 1),
-  (33, 'Color',          'Black',            0.00,    1, 0, 1, 1);
+  (23, 'Pattern',        'Floral Blue',      0.00,    1, 0, 1, 1);
 
 -- =====================
 -- 9. Modifier Portions (modifier + product_portion = stock, price adj.)
@@ -400,42 +292,6 @@ INSERT INTO modifier_portion (modifier_portion_id, modifier_id, product_portion_
   -- Apple Watch 45mm (pp_id=19): Silicone, Metal strap
   (21, 11, 19, 0.00,    8,  1, 0, 1, 1),
   (22, 12, 19, 3000.00, 4,  1, 0, 1, 1),
-  -- MacBook Air M2 256GB (pp_id=38): Space Gray, Silver
-  (44, 24, 38, 0.00,    8,  1, 0, 1, 1),
-  (45, 25, 38, 0.00,    7,  1, 0, 1, 1),
-  -- MacBook Air M2 512GB (pp_id=39): Space Gray, Silver
-  (46, 24, 39, 0.00,    5,  1, 0, 1, 1),
-  (47, 25, 39, 0.00,    5,  1, 0, 1, 1),
-  -- MacBook Pro 14 512GB (pp_id=40): Space Gray, Silver
-  (48, 24, 40, 0.00,    6,  1, 0, 1, 1),
-  (49, 25, 40, 0.00,    4,  1, 0, 1, 1),
-  -- MacBook Pro 14 1TB (pp_id=41): Space Gray, Silver
-  (50, 24, 41, 0.00,    4,  1, 0, 1, 1),
-  (51, 25, 41, 0.00,    4,  1, 0, 1, 1),
-  -- iPad Pro 12.9 256GB (pp_id=44): Wi-Fi, Cellular
-  (52, 26, 44, 0.00,    12, 1, 0, 1, 1),
-  (53, 27, 44, 5000.00, 8,  1, 0, 1, 1),
-  -- iPad Pro 12.9 512GB (pp_id=45): Wi-Fi, Cellular
-  (54, 26, 45, 0.00,    10, 1, 0, 1, 1),
-  (55, 27, 45, 5000.00, 5,  1, 0, 1, 1),
-  -- Galaxy Tab S9 128GB (pp_id=46): Black, Blue
-  (56, 1,  46, 0.00,    15, 1, 0, 1, 1),
-  (57, 2,  46, 0.00,    10, 1, 0, 1, 1),
-  -- Galaxy Tab S9 256GB (pp_id=47): Black, Blue
-  (58, 1,  47, 0.00,    12, 1, 0, 1, 1),
-  (59, 2,  47, 0.00,    8,  1, 0, 1, 1),
-  -- Bose SoundLink Flex (pp_id=50): Black, Blue
-  (60, 28, 50, 0.00,    25, 1, 0, 1, 1),
-  (61, 29, 50, 0.00,    25, 1, 0, 1, 1),
-  -- AirPods Pro 2: White, Black
-  (62, 30, 28, 0.00,    30, 1, 0, 1, 1),
-  (63, 31, 28, 0.00,    30, 1, 0, 1, 1),
-  -- PS5 Digital: White, Black
-  (64, 32, 29, 0.00,    15, 1, 0, 1, 1),
-  (65, 33, 29, 0.00,    10, 1, 0, 1, 1),
-  -- Xbox Series X: White, Black
-  (66, 32, 30, 0.00,    12, 1, 0, 1, 1),
-  (67, 33, 30, 0.00,    8,  1, 0, 1, 1),
   -- Men T-Shirt S (pp_id=21): Navy Blue, Red, Grey
   (23, 15, 21, 0.00,    25, 1, 0, 1, 1),
   (24, 16, 21, 0.00,    25, 1, 0, 1, 1),
@@ -529,3 +385,12 @@ INSERT INTO payment_master (payment_id, order_id, transaction_id, payment_method
   (2, 2, 'TXN-2002', 'cash_on_delivery', 183998.00, 'INR', 'completed', 'Cash collected on delivery', 'OK', 0, 0.00, 0, 3, 3);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================
+-- Seeding completed successfully!
+-- Tables seeded: user_master, user_addresses, category_master,
+--   product_master, product_categories, portion_master,
+--   product_portion, modifier_master, modifier_portion,
+--   cart_master, cart_items, order_master, order_items,
+--   offer_master, offer_usage, product_reviews, payment_master
+-- ============================================================
