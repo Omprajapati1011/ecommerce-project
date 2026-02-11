@@ -2,9 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 
 // Import Routes
-import userRoutes from "./routes/users.route.js";
-import paymentRoutes from "./routes/payments.route.js";
-import pool from "./configs/db.js";
+// import paymentRoutes from "./routes/payments.route.js";
 import userRoute from "./routes/User.route.js";
 
 // Load environment variables
@@ -46,8 +44,8 @@ app.get("/", (req, res) => {
 });
 
 // API Routes
-app.use("/api/users", userRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/users", userRoute);
+// app.use("/api/payments", paymentRoutes);
 
 // Add more routes here as you create them:
 // app.use("/api/products", productRoutes);
@@ -86,12 +84,7 @@ app.listen(port, () => {
   console.log(`API Endpoints:`);
   console.log(`  - Users: http://localhost:${port}/api/users`);
   console.log(`  - Payments: http://localhost:${port}/api/payments`);
-// app.get("/", (req, res) => {
-//   res.send("Om prajapati");
-// });
-
-app.use("/api/user", userRoute);
-
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
 });
+
+
+

@@ -21,6 +21,7 @@ import {
   notFound,
 } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
+import pool from "../configs/db.js";
 // import pool from "../configs/db.js";
 
 //user
@@ -101,6 +102,11 @@ export const loginUser = async (req, res) => {
       { expiresIn: "1h" },
     );
 
+    await pool.query(
+      `UPDATE user_master SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?`,
+      [user.user_id],
+    );
+     
     // 4️ Success response
     return ok(res, "Login successful", { token });
   } catch (err) {
@@ -134,7 +140,7 @@ export const updateProfile = async (req, res) => {
   try {
     const userId = req.user?.id;
 
-    console.log(userId);
+    // console.log(userId);
 
     if (!userId) {
       return badRequest(res, "Invalid user");
@@ -248,7 +254,10 @@ export const changePassword = async (req, res) => {
         .json({ success: false, message: "Password not updated" });
     }
 
-    res.json({ success: true, message: "Password changed successfully" });
+    res.json({
+      success: true,
+      message: "Password changed successfully. Please login again.",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });

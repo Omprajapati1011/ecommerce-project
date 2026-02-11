@@ -63,7 +63,7 @@ export const getUserByIdforpassword = async (id) => {
 
 export const updateUserPassword = async (id, newPassword) => {
   const [result] = await pool.query(
-    `UPDATE user_master SET password = ? AND update_by = ? WHERE user_id = ?`,
+    `UPDATE user_master SET password = ? ,updated_by = ? WHERE user_id = ?`,
     [newPassword, id, id],
   );
   return result.affectedRows;
@@ -82,7 +82,7 @@ export const getAllUserModel = async () => {
 export const getUserById = async (id) => {
   const sql = `SELECT name, email, role, created_at, last_login 
        FROM user_master 
-       WHERE user_id = ? AND is_deleted = false`;
+       WHERE user_id = ? AND is_deleted = 0`;
 
   const [result] = await pool.query(sql, [id]);
 
