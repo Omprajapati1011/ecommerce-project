@@ -2,9 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 
 // Import Routes
-import userRoutes from "./routes/users.route.js";
 import paymentRoutes from "./routes/payments.route.js";
-import pool from "./configs/db.js";
 import userRoute from "./routes/User.route.js";
 
 // Load environment variables
@@ -86,9 +84,8 @@ app.listen(port, () => {
   console.log(`API Endpoints:`);
   console.log(`  - Users: http://localhost:${port}/api/users`);
   console.log(`  - Payments: http://localhost:${port}/api/payments`);
-// app.get("/", (req, res) => {
-//   res.send("Om prajapati");
-// });
+});
+
 
 app.use("/api/user", userRoute);
 
