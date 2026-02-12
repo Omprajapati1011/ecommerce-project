@@ -104,6 +104,12 @@ export const loginUser = async (req, res) => {
       { expiresIn: "7d" },
     );
 
+    // const refreshToken = jwt.sign(
+    //   { id: user.user_id, email: user.email, name: user.name, role: user.role },
+    //   process.env.JWT_REFRESH_SECRET,
+    //   { expiresIn: "7d" },
+    // );
+
     await pool.query(
       `UPDATE user_master SET last_login = CURRENT_TIMESTAMP, refresh_token = ? WHERE user_id = ?`,
       [refreshToken, user.user_id],
