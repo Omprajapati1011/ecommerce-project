@@ -1,25 +1,27 @@
 import PaymentModel from "../models/payments.model.js";
-import { ok, created, badRequest, notFound, serverError } from "../utils/apiResponse.js";
-import Razorpay from "razorpay";
-import crypto from "crypto";
+import {
+  ok,
+  created,
+  badRequest,
+  notFound,
+  serverError,
+} from "../utils/apiResponse.js";
+import Stripe from "stripe";
 
-/** Razorpay instance - initialized from env credentials */
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+/** Stripe instance - initialized from env credentials */
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /**
  * @module PaymentController
  * @description Handles HTTP requests for payment operations.
- * Supports COD and Razorpay payment methods.
+ * Supports COD and Stripe payment methods.
  */
 const PaymentController = {
   /**
    * POST /api/payments/initiate
-   * @description Start a new payment (COD or Razorpay).
+   * @description Start a new payment (COD or Stripe).
    * For COD: creates a pending payment record.
-   * For Razorpay: creates a Razorpay order and returns checkout data.
+   * For Stripe: creates a PaymentIntent and returns client_secret.
    */
   async initiatePayment(req, res) {
     try {
@@ -27,12 +29,18 @@ const PaymentController = {
 
       // Validate required fields
       if (!order_id || !amount || !payment_method) {
-        return badRequest(res, "order_id, amount, and payment_method are required");
+        return badRequest(
+          res,
+          "order_id, amount, and payment_method are required"
+        );
       }
 
       // Validate payment method
-      if (!["cash_on_delivery", "razorpay"].includes(payment_method)) {
-        return badRequest(res, "Invalid payment method. Use: cash_on_delivery or razorpay");
+      if (!["cash_on_delivery", "stripe"].includes(payment_method)) {
+        return badRequest(
+          res,
+          "Invalid payment method. Use: cash_on_delivery or stripe"
+        );
       }
 
       // Validate amount
@@ -58,35 +66,43 @@ const PaymentController = {
         });
       }
 
-      // --- Razorpay ---
-      const razorpayOrder = await razorpay.orders.create({
-        amount: Math.round(amount * 100), // Razorpay expects paise (1 INR = 100 paise)
-        currency,
-        receipt: `order_${order_id}_${Date.now()}`,
-        notes: { order_id: order_id.toString() },
+      // --- Stripe ---
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Stripe expects smallest currency unit (paise for INR)
+        currency: currency.toLowerCase(), // Stripe requires lowercase currency codes
+        metadata: {
+          order_id: order_id.toString(),
+        },
+        automatic_payment_methods: {
+          enabled: true,
+        },
       });
 
       const result = await PaymentModel.create({
         order_id,
-        payment_method: "razorpay",
+        payment_method: "stripe",
         amount,
         currency,
-        transaction_id: razorpayOrder.id,
+        transaction_id: paymentIntent.id,
         status: "processing",
-        payment_details: { razorpay_order_id: razorpayOrder.id },
+        payment_details: { stripe_payment_intent_id: paymentIntent.id },
       });
 
       await PaymentModel.updateStatus(result.insertId, "processing");
       const payment = await PaymentModel.findById(result.insertId);
 
-      return created(res, "Razorpay order created. Complete payment on frontend.", {
-        payment,
-        payment_type: "razorpay",
-        razorpay_order_id: razorpayOrder.id,
-        razorpay_key_id: process.env.RAZORPAY_KEY_ID,
-        amount: razorpayOrder.amount,
-        currency: razorpayOrder.currency,
-      });
+      return created(
+        res,
+        "Stripe PaymentIntent created. Complete payment on frontend.",
+        {
+          payment,
+          payment_type: "stripe",
+          client_secret: paymentIntent.client_secret,
+          stripe_publishable_key: process.env.STRIPE_PUBLISHABLE_KEY,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+        }
+      );
     } catch (error) {
       console.error("Initiate payment error:", error);
       return serverError(res, "Failed to initiate payment");
@@ -95,59 +111,78 @@ const PaymentController = {
 
   /**
    * POST /api/payments/verify
-   * @description Verify Razorpay payment signature after frontend checkout.
-   * Compares HMAC-SHA256 signature to confirm payment authenticity.
+   * @description Verify Stripe payment after frontend checkout.
+   * Retrieves the PaymentIntent from Stripe and checks its status.
    */
   async verifyPayment(req, res) {
     try {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+      const { payment_intent_id } = req.body;
 
       // Validate required fields
-      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-        return badRequest(res, "razorpay_order_id, razorpay_payment_id, and razorpay_signature are required");
+      if (!payment_intent_id) {
+        return badRequest(res, "payment_intent_id is required");
       }
 
-      // Generate expected signature using HMAC-SHA256
-      const body = razorpay_order_id + "|" + razorpay_payment_id;
-      const expectedSignature = crypto
-        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-        .update(body)
-        .digest("hex");
-
-      // Compare signatures
-      const isValid = expectedSignature === razorpay_signature;
-
-      // Find payment record by razorpay order ID
-      const payment = await PaymentModel.findByTransactionId(razorpay_order_id);
+      // Find payment record by Stripe PaymentIntent ID
+      const payment = await PaymentModel.findByTransactionId(payment_intent_id);
 
       if (!payment) {
         return notFound(res, "Payment record not found");
       }
 
-      if (!isValid) {
-        // Signature mismatch - mark as failed
-        await PaymentModel.updateStatus(payment.payment_id, "failed");
+      // Retrieve the PaymentIntent from Stripe to check its actual status
+      const paymentIntent =
+        await stripe.paymentIntents.retrieve(payment_intent_id);
+
+      if (paymentIntent.status === "succeeded") {
+        // Payment succeeded - mark as completed
+        await PaymentModel.updateStatus(payment.payment_id, "completed");
         await PaymentModel.updateGatewayResponse(payment.payment_id, {
-          error: "Signature verification failed",
-          razorpay_order_id,
-          razorpay_payment_id,
+          stripe_payment_intent_id: paymentIntent.id,
+          stripe_payment_method: paymentIntent.payment_method,
+          stripe_status: paymentIntent.status,
+          verified: true,
         });
 
-        return badRequest(res, "Payment verification failed. Invalid signature.");
+        const updatedPayment = await PaymentModel.findById(payment.payment_id);
+        return ok(res, "Payment verified successfully", updatedPayment);
       }
 
-      // Signature valid - mark as completed
-      await PaymentModel.updateStatus(payment.payment_id, "completed");
+      if (
+        paymentIntent.status === "requires_payment_method" ||
+        paymentIntent.status === "canceled"
+      ) {
+        // Payment failed
+        await PaymentModel.updateStatus(payment.payment_id, "failed");
+        await PaymentModel.updateGatewayResponse(payment.payment_id, {
+          stripe_payment_intent_id: paymentIntent.id,
+          stripe_status: paymentIntent.status,
+          error:
+            paymentIntent.last_payment_error?.message || "Payment failed",
+          verified: false,
+        });
+
+        return badRequest(
+          res,
+          `Payment verification failed. Status: ${paymentIntent.status}`
+        );
+      }
+
+      // Payment is still in progress (e.g., "processing", "requires_action")
       await PaymentModel.updateGatewayResponse(payment.payment_id, {
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature,
-        verified: true,
+        stripe_payment_intent_id: paymentIntent.id,
+        stripe_status: paymentIntent.status,
+        verified: false,
       });
 
-      const updatedPayment = await PaymentModel.findById(payment.payment_id);
-
-      return ok(res, "Payment verified successfully", updatedPayment);
+      return ok(
+        res,
+        `Payment is still in progress. Status: ${paymentIntent.status}`,
+        {
+          status: paymentIntent.status,
+          requires_action: paymentIntent.status === "requires_action",
+        }
+      );
     } catch (error) {
       console.error("Verify payment error:", error);
       return serverError(res, "Failed to verify payment");
@@ -193,7 +228,7 @@ const PaymentController = {
   /**
    * POST /api/payments/:id/refund
    * @description Process a full or partial refund.
-   * For Razorpay: calls Razorpay refund API.
+   * For Stripe: calls Stripe refund API.
    * For COD: marks as refunded (manual process).
    */
   async refundPayment(req, res) {
@@ -222,8 +257,8 @@ const PaymentController = {
         return badRequest(res, "Refund amount cannot exceed payment amount");
       }
 
-      // Razorpay refund
-      if (payment.payment_method === "razorpay") {
+      // Stripe refund
+      if (payment.payment_method === "stripe") {
         let gatewayData = {};
         try {
           gatewayData = JSON.parse(payment.gateway_response || "{}");
@@ -231,13 +266,20 @@ const PaymentController = {
           gatewayData = {};
         }
 
-        if (!gatewayData.razorpay_payment_id) {
-          return badRequest(res, "Razorpay payment ID not found. Cannot process refund.");
+        if (!gatewayData.stripe_payment_intent_id) {
+          return badRequest(
+            res,
+            "Stripe PaymentIntent ID not found. Cannot process refund."
+          );
         }
 
-        const refund = await razorpay.payments.refund(gatewayData.razorpay_payment_id, {
+        const refund = await stripe.refunds.create({
+          payment_intent: gatewayData.stripe_payment_intent_id,
           amount: Math.round(refundAmount * 100),
-          notes: { reason: reason || "Customer requested refund" },
+          reason: "requested_by_customer",
+          metadata: {
+            reason_detail: reason || "Customer requested refund",
+          },
         });
 
         await PaymentModel.processRefund(payment.payment_id, refundAmount);
@@ -256,7 +298,11 @@ const PaymentController = {
 
       const updatedPayment = await PaymentModel.findById(payment.payment_id);
 
-      return ok(res, `Refund of ${refundAmount} processed successfully`, updatedPayment);
+      return ok(
+        res,
+        `Refund of ${refundAmount} processed successfully`,
+        updatedPayment
+      );
     } catch (error) {
       console.error("Refund payment error:", error);
       return serverError(res, "Failed to process refund");
@@ -292,6 +338,70 @@ const PaymentController = {
       console.error("Complete COD error:", error);
       return serverError(res, "Internal server error");
     }
+  },
+
+  /**
+   * POST /api/payments/webhook
+   * @description Handle Stripe webhook events for async payment updates.
+   * Verifies the webhook signature and processes the event.
+   */
+  async handleWebhook(req, res) {
+    const sig = req.headers["stripe-signature"];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    switch (event.type) {
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object;
+        const payment = await PaymentModel.findByTransactionId(
+          paymentIntent.id
+        );
+        if (payment && payment.status !== "completed") {
+          await PaymentModel.updateStatus(payment.payment_id, "completed");
+          await PaymentModel.updateGatewayResponse(payment.payment_id, {
+            stripe_payment_intent_id: paymentIntent.id,
+            stripe_payment_method: paymentIntent.payment_method,
+            stripe_status: paymentIntent.status,
+            verified: true,
+            webhook_event_id: event.id,
+          });
+        }
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        const paymentIntent = event.data.object;
+        const payment = await PaymentModel.findByTransactionId(
+          paymentIntent.id
+        );
+        if (payment && payment.status !== "failed") {
+          await PaymentModel.updateStatus(payment.payment_id, "failed");
+          await PaymentModel.updateGatewayResponse(payment.payment_id, {
+            stripe_payment_intent_id: paymentIntent.id,
+            stripe_status: paymentIntent.status,
+            error:
+              paymentIntent.last_payment_error?.message || "Payment failed",
+            webhook_event_id: event.id,
+          });
+        }
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    return res.status(200).json({ received: true });
   },
 };
 

@@ -10,7 +10,7 @@ const PaymentModel = {
    * Create a new payment record.
    * @param {Object} paymentData
    * @param {number} paymentData.order_id - Associated order ID
-   * @param {string} paymentData.payment_method - 'cash_on_delivery' | 'razorpay'
+   * @param {string} paymentData.payment_method - 'cash_on_delivery' | 'stripe'
    * @param {number} paymentData.amount - Payment amount
    * @param {string} [paymentData.currency='INR'] - ISO currency code
    * @param {string} [paymentData.transaction_id=null] - Gateway transaction ID
@@ -61,8 +61,8 @@ const PaymentModel = {
 
   /**
    * Find a payment by its gateway transaction ID.
-   * Used during Razorpay payment verification.
-   * @param {string} transactionId - Razorpay order/transaction ID
+   * Used during Stripe payment verification.
+   * @param {string} transactionId - Stripe PaymentIntent ID
    * @returns {Promise<Object|null>} Payment record or null
    */
   async findByTransactionId(transactionId) {
@@ -135,7 +135,7 @@ const PaymentModel = {
   /**
    * Store the raw gateway response for debugging and auditing.
    * @param {number} paymentId - Payment to update
-   * @param {Object} gatewayResponse - Response object from Razorpay
+   * @param {Object} gatewayResponse - Response object from Stripe
    * @returns {Promise<Object>} MySQL update result
    */
   async updateGatewayResponse(paymentId, gatewayResponse) {
