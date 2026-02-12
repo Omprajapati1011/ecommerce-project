@@ -26,6 +26,7 @@ import {
 import jwt from "jsonwebtoken";
 import pool from "../configs/db.js";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 // import pool from "../configs/db.js";
@@ -35,21 +36,55 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Hash password
+    // 1️ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const data = {
       name,
       email,
       password: hashedPassword,
+      is_verified: 0,
       created_by: 1,
     };
 
+    // 2️ Insert user
     const result = await createUserModel(data);
 
-    return created(res, "User created successfully", {
-      userId: result.insertId,
+    const userId = result.insertId;
+
+    // 3️ Generate verification token
+    const token = jwt.sign(
+      { userId },
+      process.env.EMAIL_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    const verificationLink = `http://localhost:${process.env.SERVER_PORT}/api/users/verify-email?token=${token}`;
+
+    // 4️ Send email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
     });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Verify Your Email",
+      html: `
+        <h3>Email Verification</h3>
+        <p>Click below to verify your account:</p>
+        <a href="${verificationLink}">Verify Email</a>
+      `,
+    });
+
+    return created(res, "User registered. Please verify your email.", {
+      userId,
+    });
+
   } catch (err) {
     console.error("Register Error:", err);
 
@@ -58,6 +93,23 @@ export const registerUser = async (req, res) => {
     }
 
     return serverError(res);
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    const decoded = jwt.verify(token, process.env.EMAIL_SECRET);
+
+    await pool.query(
+      "UPDATE user_master SET is_verified = 1 WHERE user_id = ?",
+      [decoded.userId]
+    );
+
+    return res.send("Email verified successfully");
+  } catch (err) {
+    return res.status(400).send("Invalid or expired token");
   }
 };
 
@@ -76,6 +128,12 @@ export const loginUser = async (req, res) => {
     if (user.is_blocked) {
       return res.status(403).json({
         message: "Your account has been blocked by admin",
+      });
+    }
+
+    if(user.is_verified) {
+      return res.json({
+        message : "Please verify your email first",
       });
     }
 
@@ -103,6 +161,12 @@ export const loginUser = async (req, res) => {
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: "7d" },
     );
+
+    // const refreshToken = jwt.sign(
+    //   { id: user.user_id, email: user.email, name: user.name, role: user.role },
+    //   process.env.JWT_REFRESH_SECRET,
+    //   { expiresIn: "7d" },
+    // );
 
     await pool.query(
       `UPDATE user_master SET last_login = CURRENT_TIMESTAMP, refresh_token = ? WHERE user_id = ?`,

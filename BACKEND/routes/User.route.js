@@ -12,6 +12,7 @@ import {
   blockUser,
   logoutUser,
   refreshToken,
+  verifyEmail,
 } from "../controllers/User.controller.js";
 import { auth, adminOnly } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/Validations.middleware.js";
@@ -43,6 +44,9 @@ userRoute.post("/create-user", validate(registerSchema), registerUser);
 
 // Login
 userRoute.post("/login-user", validate(loginSchema), loginUser);
+
+//verify
+userRoute.get("/verify-email", verifyEmail);
 
 //Logout
 userRoute.post("/logout", auth, logoutUser);
