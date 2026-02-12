@@ -13,6 +13,15 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.log("connection failed done", err.message);
+  } else {
+    console.log("DB connection Done");
+    connection.release();
+  }
+});
+
 const testConnection = async () => {
   try {
     const connection = await pool.getConnection();

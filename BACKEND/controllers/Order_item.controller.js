@@ -1,14 +1,8 @@
-// import { getCart, getCompareProductCategory } from "../models/Order_master.model.js";
-import { Orders } from "../models/Order_items.model.js";
+import { Orders,OrdersItems } from "../models/Order_items.model.js";
 
 import { notFound, serverError, ok, created } from "../utils/apiResponse.js";
-// Get all products that are currently in the user's cart.
-// NOTE: userId is hard-coded for now; in a real app,
-//       you would read this from the authenticated user.
 
-// Create order_items rows for each product in the user's cart,
-// applying discount, tax and shipping to calculate final totals.
-
+// Retrieve all items for a specific order by order ID
 export const getAllOrderItem = async (req, res) => {
 
   try {
@@ -20,13 +14,14 @@ export const getAllOrderItem = async (req, res) => {
    return  serverError(res)
   }
 }
+// Retrieve a single order item by order ID and item ID
 export const getOneItem = async (req, res) => {
   try {
     const order_Id = req.params.orderId;
-    const item_Id = req.params.orderId;
-    const singleItem = await Orders(order_Id, item_Id);
+    const item_Id = req.params.itemId;
+    const singleItem = await OrdersItems(order_Id, item_Id);
     if (!singleItem  || singleItem.length == 0) return notFound(res, "Item not found")
-    return ok(res, "Item found seccessfully")
+    return ok(res, "Item found seccessfully",singleItem)
   } catch (error) {
    return  serverError(res)
   }
