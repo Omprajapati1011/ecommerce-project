@@ -1,6 +1,5 @@
 import express from "express";
 import dotenv from "dotenv";
-import pool from "./configs/db.js";
 import router from "./routes/order_master.route.js"
 import router_Item from "./routes/Order_item.route.js";
 
