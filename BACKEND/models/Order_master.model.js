@@ -39,9 +39,6 @@ export const getDisCategory = async (productsIds) => {
     const [disOncategory] = await pool.query(`select  product_id,category_id from product_categories where product_id in (?)`, [productsIds])
 return disOncategory;
 };
-
-
-
 // Insert a new row into order_master and then update the order_number.
 export const insertValue = async (values) => {
 
