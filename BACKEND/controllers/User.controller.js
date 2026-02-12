@@ -22,19 +22,17 @@ import {
 } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import pool from "../configs/db.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 // import pool from "../configs/db.js";
 
 //user
 export const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
-
   try {
-    //  Basic validation
-    if (!name || !email || !password) {
-      return badRequest(res, "All fields are required");
-    }
+    const { name, email, password } = req.body;
 
-    //  Hash password
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const data = {
@@ -46,18 +44,12 @@ export const registerUser = async (req, res) => {
 
     const result = await createUserModel(data);
 
-    if (!result || result.affectedRows === 0) {
-      return badRequest(res, "User not created");
-    }
-
-    //  Success response (201)
     return created(res, "User created successfully", {
       userId: result.insertId,
     });
   } catch (err) {
     console.error("Register Error:", err);
 
-    //  Handle duplicate email error (MySQL error code)
     if (err.code === "ER_DUP_ENTRY") {
       return conflict(res, "Email already exists");
     }
@@ -67,13 +59,8 @@ export const registerUser = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    if (!email || !password) {
-      return badRequest(res, "Email and password are required");
-    }
-
+    const { email, password } = req.body;
     // 1️ Find user
     const rows = await loginUserModel(email);
 
@@ -102,11 +89,17 @@ export const loginUser = async (req, res) => {
       { expiresIn: "1h" },
     );
 
+    // const refreshToken = jwt.sign(
+    //   { id: user.user_id, email: user.email, name: user.name, role: user.role },
+    //   process.env.JWT_REFRESH_SECRET,
+    //   { expiresIn: "7d" },
+    // );
+
     await pool.query(
       `UPDATE user_master SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?`,
       [user.user_id],
     );
-     
+
     // 4️ Success response
     return ok(res, "Login successful", { token });
   } catch (err) {
@@ -284,10 +277,6 @@ export const getProfileById = async (req, res) => {
   try {
     //get id from parameter
     const id = req.params.id;
-
-    if (!id) {
-      return badRequest(res, "User ID is required");
-    }
 
     const result = await getUserById(id);
 

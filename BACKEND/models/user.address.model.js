@@ -27,6 +27,15 @@ export const setDefaultAddressModel = async (userId, addressId) => {
   return result;
 };
 
+export const getDefaultAddressModel = async (userId) => {
+  const sql = `SELECT full_name, address_line1, city, state, postal_code, country 
+       FROM user_addresses 
+       WHERE user_id = ? AND is_default = 1`;
+  const [result] = await pool.query(sql, [userId]);
+
+  return result;
+};
+
 export const getAllAddresses = async (userId) => {
   const sql = `SELECT address_id,
               full_name,
@@ -46,6 +55,13 @@ export const getAllAddresses = async (userId) => {
        ORDER BY is_default DESC, created_at DESC`;
 
   const [result] = await pool.query(sql, [userId]);
+
+  return result;
+};
+
+export const getAddressByIdModel = async (addressId, userId) => {
+  const sql = `SELECT full_name,address_line1,city,state,postal_code,country FROM user_addresses WHERE address_id = ? AND user_id = ?`;
+  const [result] = await pool.query(sql, [addressId, userId]);
 
   return result;
 };
@@ -74,4 +90,3 @@ export const deleteAddressModel = async (addressId, userId) => {
 
   return result;
 };
-
