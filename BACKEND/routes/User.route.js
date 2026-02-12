@@ -9,10 +9,17 @@ import {
   changePassword,
   updateProfile,
   viewProfile,
+  blockUser,
+  logoutUser,
+  refreshToken,
 } from "../controllers/User.controller.js";
 import { auth, adminOnly } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/Validations.middleware.js";
-import { updateProfileSchema } from "../validations/user.validation.js";
+import {
+  addressSchema,
+  updateAddressSchema,
+  updateProfileSchema,
+} from "../validations/user.validation.js";
 import { updatePasswordSchema } from "../validations/user.validation.js";
 import { registerSchema } from "../validations/user.validation.js";
 import { loginSchema } from "../validations/user.validation.js";
@@ -20,6 +27,8 @@ import { idParamSchema } from "../validations/user.validation.js";
 import {
   addUserAddress,
   deleteAddress,
+  getAddressById,
+  getDefaultAddress,
   setDefaultAddress,
   showAllUserAddresses,
   updateAddress,
@@ -34,6 +43,12 @@ userRoute.post("/create-user", validate(registerSchema), registerUser);
 
 // Login
 userRoute.post("/login-user", validate(loginSchema), loginUser);
+
+//Logout
+userRoute.post("/logout", auth, logoutUser);
+
+//getRefreshtoken
+userRoute.post("/refresh-token", refreshToken);
 
 // View own profile
 userRoute.get("/view-profile", auth, viewProfile);
@@ -55,7 +70,7 @@ userRoute.patch(
 // ================= USER ADDRESS ROUTES =================
 
 //add user address
-userRoute.post("/add-address", auth, addUserAddress);
+userRoute.post("/add-address", auth, validate(addressSchema), addUserAddress);
 
 //set address default
 userRoute.patch(
@@ -65,12 +80,23 @@ userRoute.patch(
   setDefaultAddress,
 );
 
+//get default address
+userRoute.get("/getDefault", auth, getDefaultAddress);
+
 //get all user addresses
 userRoute.get("/show-addresses", auth, showAllUserAddresses);
 
+//get address by id
+userRoute.get(
+  "/address/:id",
+  auth,
+  validate(idParamSchema, "params"),
+  getAddressById,
+);
+
 //delete user address
 userRoute.delete(
-  "/delete-address/:id",
+  "/delete-address/:addressId",
   auth,
   validate(idParamSchema, "params"),
   deleteAddress,
@@ -78,9 +104,10 @@ userRoute.delete(
 
 //update user address
 userRoute.patch(
-  "/update-address/:id",
+  "/update-address/:addressId",
   auth,
   validate(idParamSchema, "params"),
+  validate(updateAddressSchema),
   updateAddress,
 );
 
@@ -105,6 +132,15 @@ userRoute.delete(
   adminOnly,
   validate(idParamSchema, "params"),
   deleteUserByAdmin,
+);
+
+//blockByadmin
+userRoute.patch(
+  "/block/:id",
+  auth,
+  adminOnly,
+  validate(idParamSchema, "params"),
+  blockUser,
 );
 
 export default userRoute;

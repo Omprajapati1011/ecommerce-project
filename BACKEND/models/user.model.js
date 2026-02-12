@@ -22,6 +22,23 @@ export const loginUserModel = async (email) => {
   return result;
 };
 
+export const logoutUserModel = async (userId) => {
+  const sql = `UPDATE user_master SET refresh_token = NULL WHERE user_id = ?`;
+
+  const [result] = await pool.query(sql, [userId]);
+
+  return result;
+};
+
+export const refreshTokenHelper = async (id, refreshToken) => {
+  const sql = `SELECT * FROM user_master 
+       WHERE user_id = ? AND refresh_token = ?`;
+
+  const [result] = await pool.query(sql, [id, refreshToken]);
+
+  return result;
+};
+
 //users can see their profile
 export const viewUserModel = async (data) => {
   const sql = `SELECT name, email FROM user_master WHERE user_id = ?`;
@@ -94,6 +111,15 @@ export const deleteUserByAdminModel = async (id, adminId) => {
   const sql = `Update user_master SET is_deleted = true AND updated_by = ? WHERE user_id = ?`;
 
   const [result] = await pool.query(sql, [adminId, id]);
+
+  return result;
+};
+
+//admin can block user
+export const blockUserById = async (userId, adminId) => {
+  const sql = `UPDATE user_master SET is_blocked = 1, updated_by = ? WHERE user_id = ?`;
+
+  const [result] = await pool.query(sql, [adminId, userId]);
 
   return result;
 };
