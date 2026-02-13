@@ -3,8 +3,11 @@ import dotenv from "dotenv";
 
 // Import Routes
 // import paymentRoutes from "./routes/payments.route.js";
-import cartRouter from "./routes/cart.route.js";
+// import cartRouter from "./routes/cart.route.js";
 import userRoute from "./routes/User.route.js";
+import { route as offerRoute } from "./routes/offer.route.js";
+// import cartRouter from "./routes/cart.route.js";
+
 
 // Load environment variables
 dotenv.config();
@@ -45,7 +48,7 @@ app.get("/", (req, res) => {
 });
 
 // API Routes
-app.use("/api/cart", cartRouter);
+// app.use("/api/cart", cartRouter);
 app.use("/api/users", userRoute);
 //app.use("/api/payments", paymentRoutes);
 // Add more routes here as you create them:
