@@ -5,7 +5,11 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
+<<<<<<< HEAD
     "start": "nodemon server.js",
+=======
+    "start": "node server.js",
+>>>>>>> b9ce9f2302538717ae992a5928d2c565463a6fc1
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

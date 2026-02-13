@@ -8,6 +8,8 @@ import userRoute from "./routes/User.route.js";
 import { route as offerRoute } from "./routes/offer.route.js";
 // import cartRouter from "./routes/cart.route.js";
 
+console.log('Hello world!');
+
 import router from "./routes/order_master.route.js"
 import router_Item from "./routes/Order_item.route.js";
 
@@ -51,8 +53,8 @@ app.get("/", (req, res) => {
 // app.use("/", (req, res) => {
 //  res.send("Om prajapati");
 // });
-app.use("/api",router)
-app.use("/api",router_Item)
+app.use("/api", router)
+app.use("/api", router_Item)
 
 // API Routes
 // app.use("/api/cart", cartRouter);
@@ -99,6 +101,6 @@ app.listen(port, () => {
 //   res.send("Om prajapati");
 // });
 
-app.listen(port, ()=>{
-      console.log(`Server is running on http://localhost:${port}`);
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
