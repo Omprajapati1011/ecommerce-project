@@ -50,6 +50,7 @@ app.get("/", (req, res) => {
 // API Routes
 // app.use("/api/cart", cartRouter);
 app.use("/api/users", userRoute);
+app.use("/api/offer", offerRoute);
 //app.use("/api/payments", paymentRoutes);
 // Add more routes here as you create them:
 // app.use("/api/products", productRoutes);
