@@ -78,12 +78,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    if (user.is_verified) {
-      return res.json({
-        message: "Please verify your email first",
-      });
-    }
-
     // 2️ Compare password
     const isMatch = await bcrypt.compare(password, user.password);
 
