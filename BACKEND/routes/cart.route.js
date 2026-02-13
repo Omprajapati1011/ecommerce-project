@@ -1,84 +1,84 @@
-// import express from "express";
+import express from "express";
 
-// import {
+import {
 
-//   getCart,
+  getCart,
 
-//   addItemToCart,
+  addItemToCart,
 
-//   updateCartItem,
+  updateCartItem,
 
-//   removeCartItem
+  removeCartItem
 
-// } from "../controllers/cart.controller.js";
+} from "../controllers/cart.controller.js";
 
-// import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
-// import { validateCart, validateCartItemOwnership } from "../middlewares/cart.middleware.js";
-
-
-// const router = express.Router();
+import { validateCart, validateCartItemOwnership } from "../middlewares/cartMiddleware.js";
 
 
-// // All cart routes require authentication
-
-// // User ID is extracted from JWT token instead of URL parameter
+const router = express.Router();
 
 
-// /** 
+// All cart routes require authentication
 
-//  * Get current user's cart
-
-//  * GET /api/cart
-
-//  * Headers: Authorization: Bearer <token>
-
-//  */
-
-// router.get("/", authMiddleware, validateCart, getCart);
+// User ID is extracted from JWT token instead of URL parameter
 
 
-// /** 
+/** 
 
-//  * Add item to cart (add quantity if already present)
+ * Get current user's cart
 
-//  * POST /api/cart/items
+ * GET /api/cart
 
-//  * Headers: Authorization: Bearer <token>
+ * Headers: Authorization: Bearer <token>
 
-//  * Body: { productId, quantity, portionId?, modifierId? }
+ */
 
-//  */
-
-// router.post("/items", authMiddleware, validateCart, addItemToCart);
+router.get("/", authMiddleware, validateCart, getCart);
 
 
-// /** 
+/** 
 
-//  * Update quantity for a specific cart item (0 = remove)
+ * Add item to cart (add quantity if already present)
 
-//  * PATCH /api/cart/items/:cartItemId
+ * POST /api/cart/items
 
-//  * Headers: Authorization: Bearer <token>
+ * Headers: Authorization: Bearer <token>
 
-//  * Body: { quantity }
+ * Body: { productId, quantity, portionId?, modifierId? }
 
-//  */
+ */
 
-// router.patch("/items/:cartItemId", authMiddleware, validateCart, validateCartItemOwnership, updateCartItem);
-
-
-// /** 
-
-//  * Remove a cart item
-
-//  * DELETE /api/cart/items/:cartItemId
-
-//  * Headers: Authorization: Bearer <token>
-
-//  */
-
-// router.delete("/items/:cartItemId", authMiddleware, validateCart, validateCartItemOwnership, removeCartItem);
+router.post("/items", authMiddleware, validateCart, addItemToCart);
 
 
-// export default router;
+/** 
+
+ * Update quantity for a specific cart item (0 = remove)
+
+ * PATCH /api/cart/items/:cartItemId
+
+ * Headers: Authorization: Bearer <token>
+
+ * Body: { quantity }
+
+ */
+
+router.patch("/items/:cartItemId", authMiddleware, validateCart, validateCartItemOwnership, updateCartItem);
+
+
+/** 
+
+ * Remove a cart item
+
+ * DELETE /api/cart/items/:cartItemId
+
+ * Headers: Authorization: Bearer <token>
+
+ */
+
+router.delete("/items/:cartItemId", authMiddleware, validateCart, validateCartItemOwnership, removeCartItem);
+
+
+export default router;

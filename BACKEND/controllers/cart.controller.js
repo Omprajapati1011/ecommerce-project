@@ -1,485 +1,485 @@
-// import {
+import {
 
-//   getOrCreateCartByUserId,
+  getOrCreateCartByUserId,
 
-//   getCartItemsWithProduct,
+  getCartItemsWithProduct,
 
-//   findCartItem,
+  findCartItem,
 
-//   insertCartItem,
+  insertCartItem,
 
-//   updateCartItemQuantity,
+  updateCartItemQuantity,
 
-//   deleteCartItem,
+  deleteCartItem,
 
-//   getProductPricing,
+  getProductPricing,
 
-//   getPortionPricing,
+  getPortionPricing,
 
-//   getModifierPricing,
+  getModifierPricing,
 
-//   getFirstAvailablePortion
+  getFirstAvailablePortion
 
-// } from "../models/cart.model.js";
+} from "../models/cart.model.js";
 
-// import {
+import {
 
-//   ok,
+  ok,
 
-//   created,
+  created,
 
-//   badRequest,
+  badRequest,
 
-//   unauthorized,
+  unauthorized,
 
-//   notFound,
+  notFound,
 
-//   serverError
+  serverError
 
-// } from "../utils/apiResponse.js";
+} from "../utils/apiResponse.js";
 
 
 
-// /**
+/**
 
-//  * Parse and validate positive integer values
+ * Parse and validate positive integer values
 
-//  * @param {string|number} value - Value to parse
+ * @param {string|number} value - Value to parse
 
-//  * @returns {number|null} Parsed integer or null if invalid
+ * @returns {number|null} Parsed integer or null if invalid
 
-//  */
+ */
 
-// function parsePositiveInt(value) {
+function parsePositiveInt(value) {
 
-//   const num = Number.parseInt(value, 10);
+  const num = Number.parseInt(value, 10);
 
-//   if (Number.isNaN(num) || num <= 0) {
+  if (Number.isNaN(num) || num <= 0) {
 
-//     return null;
+    return null;
 
-//   }
+  }
 
-//   return num;
+  return num;
 
-// }
+}
 
 
 
-// /**
+/**
 
-//  * Build cart response object with totals
+ * Build cart response object with totals
 
-//  * @param {number} cartId - Cart ID
+ * @param {number} cartId - Cart ID
 
-//  * @param {Array} items - Cart items with product details
+ * @param {Array} items - Cart items with product details
 
-//  * @returns {Object} Cart response with items, subtotal, discount, total
+ * @returns {Object} Cart response with items, subtotal, discount, total
 
-//  */
+ */
 
-// function buildCartResponse(cartId, items) {
+function buildCartResponse(cartId, items) {
 
-//   const subtotal = items.reduce(
+  const subtotal = items.reduce(
 
-//     (sum, item) => sum + Number(item.effective_price) * item.quantity,
+    (sum, item) => sum + Number(item.effective_price) * item.quantity,
 
-//     0
+    0
 
-//   );
+  );
 
 
 
-//   // Offer / coupon support can adjust these later
+  // Offer / coupon support can adjust these later
 
-//   const discount = 0;
+  const discount = 0;
 
-//   const total = subtotal - discount;
+  const total = subtotal - discount;
 
 
 
-//   return {
+  return {
 
-//     cartId,
+    cartId,
 
-//     items: items.map((item) => ({
+    items: items.map((item) => ({
 
-//       cartItemId: item.cart_item_id,
+      cartItemId: item.cart_item_id,
 
-//       productId: item.product_id,
+      productId: item.product_id,
 
-//       productName: item.display_name,
+      productName: item.display_name,
 
-//       shortDescription: item.short_description,
+      shortDescription: item.short_description,
 
-//       quantity: item.quantity,
+      quantity: item.quantity,
 
-//       price: Number(item.effective_price),
+      price: Number(item.effective_price),
 
-//       lineTotal: Number(item.effective_price) * item.quantity,
+      lineTotal: Number(item.effective_price) * item.quantity,
 
-//       portionPrice: item.portion_price ? Number(item.portion_price) : null,
+      portionPrice: item.portion_price ? Number(item.portion_price) : null,
 
-//       portionDiscountedPrice: item.portion_discounted_price ? Number(item.portion_discounted_price) : null,
+      portionDiscountedPrice: item.portion_discounted_price ? Number(item.portion_discounted_price) : null,
 
-//       portionId: item.portion_id,
+      portionId: item.portion_id,
 
-//       portionValue: item.portion_value,
+      portionValue: item.portion_value,
 
-//       modifierId: item.modifier_id,
+      modifierId: item.modifier_id,
 
-//       modifierName: item.modifier_name,
+      modifierName: item.modifier_name,
 
-//       modifierValue: item.modifier_value
+      modifierValue: item.modifier_value
 
-//     })),
+    })),
 
-//     subtotal,
+    subtotal,
 
-//     discount,
+    discount,
 
-//     total,
+    total,
 
-//     appliedCoupon: null
+    appliedCoupon: null
 
-//   };
+  };
 
-// }
+}
 
 
 
-// /**
+/**
 
-//  * Get current user's cart
+ * Get current user's cart
 
-//  * Requires authentication (userId from JWT token)
+ * Requires authentication (userId from JWT token)
 
-//  * 
+ * 
 
-//  * GET /api/cart
+ * GET /api/cart
 
-//  * Headers: Authorization: Bearer <token>
+ * Headers: Authorization: Bearer <token>
 
-//  */
+ */
 
-// async function getCart(req, res) {
+async function getCart(req, res) {
 
-//   try {
+  try {
 
-//     // Cart is attached by validateCart middleware
-//     const items = await getCartItemsWithProduct(req.cart.cart_id);
+    // Cart is attached by validateCart middleware
+    const items = await getCartItemsWithProduct(req.cart.cart_id);
 
 
 
-//     const response = buildCartResponse(req.cart.cart_id, items);
+    const response = buildCartResponse(req.cart.cart_id, items);
 
-//     return ok(res, "Cart retrieved successfully", response);
+    return ok(res, "Cart retrieved successfully", response);
 
-//   } catch (err) {
+  } catch (err) {
 
-//     console.error("Error in getCart:", err);
+    console.error("Error in getCart:", err);
 
-//     return serverError(res, "Internal server error");
+    return serverError(res, "Internal server error");
 
-//   }
+  }
 
-// }
+}
 
 
 
-// /**
+/**
 
-//  * Add item to cart (add quantity if already present)
+ * Add item to cart (add quantity if already present)
 
-//  * Requires authentication (userId from JWT token)
+ * Requires authentication (userId from JWT token)
 
-//  * 
+ * 
 
-//  * POST /api/cart/items
+ * POST /api/cart/items
 
-//  * Headers: Authorization: Bearer <token>
+ * Headers: Authorization: Bearer <token>
 
-//  * Body: { productId, quantity, portionId?, modifierId? }
+ * Body: { productId, quantity, portionId?, modifierId? }
 
-//  */
+ */
 
-// async function addItemToCart(req, res) {
+async function addItemToCart(req, res) {
 
-//   try {
+  try {
 
-//     // User ID comes from JWT token (authMiddleware)
-//     const userId = req.user.userId;
+    // User ID comes from JWT token (authMiddleware)
+    const userId = req.user.userId;
 
-//     // Cart is attached by validateCart middleware
-//     const { productId, quantity, portionId, modifierId } = req.body;
+    // Cart is attached by validateCart middleware
+    const { productId, quantity, portionId, modifierId } = req.body;
 
 
 
-//     const parsedProductId = parsePositiveInt(productId);
+    const parsedProductId = parsePositiveInt(productId);
 
-//     const parsedQuantity = parsePositiveInt(quantity);
+    const parsedQuantity = parsePositiveInt(quantity);
 
-//     const parsedPortionId = portionId ? parsePositiveInt(portionId) : null;
+    const parsedPortionId = portionId ? parsePositiveInt(portionId) : null;
 
-//     const parsedModifierId = modifierId ? parsePositiveInt(modifierId) : null;
+    const parsedModifierId = modifierId ? parsePositiveInt(modifierId) : null;
 
 
 
-//     if (!parsedProductId || !parsedQuantity) {
+    if (!parsedProductId || !parsedQuantity) {
 
-//       return badRequest(res, "Invalid productId or quantity");
+      return badRequest(res, "Invalid productId or quantity");
 
-//     }
+    }
 
 
 
-//     const pricing = await getProductPricing(parsedProductId);
+    const pricing = await getProductPricing(parsedProductId);
 
 
 
-//     if (!pricing) {
+    if (!pricing) {
 
-//       return notFound(res, "Product not found or inactive");
+      return notFound(res, "Product not found or inactive");
 
-//     }
+    }
 
 
 
-//     let itemPrice = Number(pricing.price);
-//     let finalPortionId = parsedPortionId;
+    let itemPrice = Number(pricing.price);
+    let finalPortionId = parsedPortionId;
 
 
 
-//     // If portion is provided, validate it. If not, auto-select first available portion
-//     if (parsedPortionId) {
+    // If portion is provided, validate it. If not, auto-select first available portion
+    if (parsedPortionId) {
 
-//       const portionPricing = await getPortionPricing(parsedPortionId);
+      const portionPricing = await getPortionPricing(parsedPortionId);
 
-//       if (!portionPricing) {
+      if (!portionPricing) {
 
-//         return badRequest(res, "Invalid portion specified. This portion does not exist or is inactive.");
+        return badRequest(res, "Invalid portion specified. This portion does not exist or is inactive.");
 
-//       }
+      }
 
-//       itemPrice = Number(portionPricing.price);
+      itemPrice = Number(portionPricing.price);
 
-//     } else {
+    } else {
 
-//       // Auto-select first available portion
-//       const defaultPortion = await getFirstAvailablePortion(parsedProductId);
+      // Auto-select first available portion
+      const defaultPortion = await getFirstAvailablePortion(parsedProductId);
 
-//       if (defaultPortion) {
+      if (defaultPortion) {
 
-//         finalPortionId = defaultPortion.productPortionId;
+        finalPortionId = defaultPortion.productPortionId;
 
-//         itemPrice = Number(defaultPortion.price);
+        itemPrice = Number(defaultPortion.price);
 
-//       } else {
+      } else {
 
-//         // If no portion exists, use base product price
-//         finalPortionId = null;
-//         itemPrice = Number(pricing.price);
-//       }
+        // If no portion exists, use base product price
+        finalPortionId = null;
+        itemPrice = Number(pricing.price);
+      }
 
-//     }
+    }
 
 
 
-//     // If modifier is provided, add modifier's additional price
-//     if (parsedModifierId) {
-//       const modifierPricing = await getModifierPricing(parsedModifierId);
-//       if (!modifierPricing) {
-//         return badRequest(res, "Invalid modifier specified. This modifier does not exist or is inactive.");
-//       }
-//       itemPrice = Math.round((itemPrice + Number(modifierPricing.additionalPrice)) * 1000) / 1000;
-//     } else {
-//       itemPrice = Math.round(itemPrice * 1000) / 1000;
-//     }
+    // If modifier is provided, add modifier's additional price
+    if (parsedModifierId) {
+      const modifierPricing = await getModifierPricing(parsedModifierId);
+      if (!modifierPricing) {
+        return badRequest(res, "Invalid modifier specified. This modifier does not exist or is inactive.");
+      }
+      itemPrice = Math.round((itemPrice + Number(modifierPricing.additionalPrice)) * 1000) / 1000;
+    } else {
+      itemPrice = Math.round(itemPrice * 1000) / 1000;
+    }
 
 
 
-//     const existingItem = await findCartItem(req.cart.cart_id, parsedProductId, finalPortionId, parsedModifierId);
+    const existingItem = await findCartItem(req.cart.cart_id, parsedProductId, finalPortionId, parsedModifierId);
 
 
 
-//     if (existingItem) {
+    if (existingItem) {
 
-//       const newQuantity = existingItem.quantity + parsedQuantity;
+      const newQuantity = existingItem.quantity + parsedQuantity;
 
-//       await updateCartItemQuantity(existingItem.cart_item_id, newQuantity, userId);
+      await updateCartItemQuantity(existingItem.cart_item_id, newQuantity, userId);
 
-//     } else {
+    } else {
 
-//       await insertCartItem({
+      await insertCartItem({
 
-//         cartId: req.cart.cart_id,
+        cartId: req.cart.cart_id,
 
-//         productId: parsedProductId,
+        productId: parsedProductId,
 
-//         quantity: parsedQuantity,
+        quantity: parsedQuantity,
 
-//         price: itemPrice,
+        price: itemPrice,
 
-//         productPortionId: finalPortionId,
+        productPortionId: finalPortionId,
 
-//         modifierId: parsedModifierId,
+        modifierId: parsedModifierId,
 
-//         userId
+        userId
 
-//       });
+      });
 
-//     }
+    }
 
 
 
-//     const items = await getCartItemsWithProduct(req.cart.cart_id);
+    const items = await getCartItemsWithProduct(req.cart.cart_id);
 
-//     const response = buildCartResponse(req.cart.cart_id, items);
+    const response = buildCartResponse(req.cart.cart_id, items);
 
 
 
-//     return created(res, "Item added to cart", response);
+    return created(res, "Item added to cart", response);
 
-//   } catch (err) {
+  } catch (err) {
 
-//     console.error("Error in addItemToCart:", err);
+    console.error("Error in addItemToCart:", err);
 
-//     return serverError(res, "Internal server error");
+    return serverError(res, "Internal server error");
 
-//   }
+  }
 
-// }
+}
 
 
 
-// /**
+/**
 
-//  * Update quantity for a specific cart item (0 = remove)
+ * Update quantity for a specific cart item (0 = remove)
 
-//  * Requires authentication (userId from JWT token)
+ * Requires authentication (userId from JWT token)
 
-//  * 
+ * 
 
-//  * PATCH /api/cart/items/:cartItemId
+ * PATCH /api/cart/items/:cartItemId
 
-//  * Headers: Authorization: Bearer <token>
+ * Headers: Authorization: Bearer <token>
 
-//  * Body: { quantity }
+ * Body: { quantity }
 
-//  */
+ */
 
-// async function updateCartItem(req, res) {
+async function updateCartItem(req, res) {
 
-//   try {
+  try {
 
-//     // User ID comes from JWT token (authMiddleware)
-//     const userId = req.user.userId;
+    // User ID comes from JWT token (authMiddleware)
+    const userId = req.user.userId;
 
-//     // Cart and cartItem are attached by middleware
-//     const cartItem = req.cartItem;
+    // Cart and cartItem are attached by middleware
+    const cartItem = req.cartItem;
 
-//     const { quantity } = req.body;
+    const { quantity } = req.body;
 
 
 
-//     const parsedQuantity = parsePositiveInt(quantity);
+    const parsedQuantity = parsePositiveInt(quantity);
 
 
 
-//     if (parsedQuantity === null) {
+    if (parsedQuantity === null) {
 
-//       return badRequest(res, "Invalid quantity");
+      return badRequest(res, "Invalid quantity");
 
-//     }
+    }
 
 
 
-//     // Cart item ownership is validated by middleware
-//     const cartItemId = req.cartItem.cart_item_id;
+    // Cart item ownership is validated by middleware
+    const cartItemId = req.cartItem.cart_item_id;
 
 
 
-//     if (parsedQuantity === 0) {
+    if (parsedQuantity === 0) {
 
-//       await deleteCartItem(cartItemId, userId);
+      await deleteCartItem(cartItemId, userId);
 
-//     } else {
+    } else {
 
-//       await updateCartItemQuantity(cartItemId, parsedQuantity, userId);
+      await updateCartItemQuantity(cartItemId, parsedQuantity, userId);
 
-//     }
+    }
 
 
 
-//     const updatedItems = await getCartItemsWithProduct(req.cart.cart_id);
+    const updatedItems = await getCartItemsWithProduct(req.cart.cart_id);
 
-//     const response = buildCartResponse(req.cart.cart_id, updatedItems);
+    const response = buildCartResponse(req.cart.cart_id, updatedItems);
 
 
 
-//     return ok(res, "Cart item updated", response);
+    return ok(res, "Cart item updated", response);
 
-//   } catch (err) {
+  } catch (err) {
 
-//     console.error("Error in updateCartItem:", err);
+    console.error("Error in updateCartItem:", err);
 
-//     return serverError(res, "Internal server error");
+    return serverError(res, "Internal server error");
 
-//   }
+  }
 
-// }
+}
 
 
 
-// /**
+/**
 
-//  * Remove a cart item
+ * Remove a cart item
 
-//  * Requires authentication (userId from JWT token)
+ * Requires authentication (userId from JWT token)
 
-//  * 
+ * 
 
-//  * DELETE /api/cart/items/:cartItemId
+ * DELETE /api/cart/items/:cartItemId
 
-//  * Headers: Authorization: Bearer <token>
+ * Headers: Authorization: Bearer <token>
 
-//  */
+ */
 
-// async function removeCartItem(req, res) {
+async function removeCartItem(req, res) {
 
-//   try {
+  try {
 
-//     // User ID comes from JWT token (authMiddleware)
-//     const userId = req.user.userId;
+    // User ID comes from JWT token (authMiddleware)
+    const userId = req.user.userId;
 
-//     // Cart item ownership is validated by middleware
-//     const cartItemId = req.cartItem.cart_item_id;
+    // Cart item ownership is validated by middleware
+    const cartItemId = req.cartItem.cart_item_id;
 
 
 
-//     await deleteCartItem(cartItemId, userId);
+    await deleteCartItem(cartItemId, userId);
 
 
 
-//     const updatedItems = await getCartItemsWithProduct(req.cart.cart_id);
+    const updatedItems = await getCartItemsWithProduct(req.cart.cart_id);
 
-//     const response = buildCartResponse(req.cart.cart_id, updatedItems);
+    const response = buildCartResponse(req.cart.cart_id, updatedItems);
 
 
 
-//     return ok(res, "Cart item removed", response);
+    return ok(res, "Cart item removed", response);
 
-//   } catch (err) {
+  } catch (err) {
 
-//     console.error("Error in removeCartItem:", err);
+    console.error("Error in removeCartItem:", err);
 
-//     return serverError(res, "Internal server error");
+    return serverError(res, "Internal server error");
 
-//   }
+  }
 
-// }
+}
 
 
 
-// export { getCart, addItemToCart, updateCartItem, removeCartItem };
+export { getCart, addItemToCart, updateCartItem, removeCartItem };
 
