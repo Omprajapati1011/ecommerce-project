@@ -483,12 +483,17 @@ export const searchCategory = async (req, res) => {
 
     const [categories] = await Category.searchByName(name, limit, offset);
 
-    return paginated(res, "Categories fetched successfully", categories, {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    });
+    return paginated(
+      res,
+      "Categories fetched successfully",
+      {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+      categories,
+    );
   } catch (error) {
     return serverError(res, error.message);
   }
@@ -502,7 +507,10 @@ CREATE
 export const createCategory = async (req, res) => {
   try {
     const { name, parent_id } = req.body;
-    const userId = req.user.user_id;
+    const userId = req.user.id;
+    // console.log("CREATE CATEGORY =>", { name, parent_id, userId });
+    // console.log("req.user:", req.user);
+    // console.log("userId:", req.user?.user_id);
 
     const [exists] = await Category.findByName(name);
 
@@ -537,7 +545,7 @@ export const updateCategory = async (req, res) => {
   try {
     const categoryId = Number(req.params.id);
     const { name, parent_id } = req.body;
-    const userId = req.user.user_id;
+    const userId = req.user.id;
 
     const [exists] = await Category.findById(categoryId);
     if (!exists.length) return notFound(res, "Category not found");
@@ -614,7 +622,7 @@ DELETE
 export const deleteCategory = async (req, res) => {
   try {
     const categoryId = Number(req.params.id);
-    const userId = req.user.user_id;
+    const userId = req.user.id;
 
     const [exists] = await Category.findById(categoryId);
     if (!exists.length) return notFound(res, "Category not found");
@@ -641,7 +649,7 @@ RESTORE
 export const restoreCategory = async (req, res) => {
   try {
     const categoryId = Number(req.params.id);
-    const userId = req.user.user_id;
+    const userId = req.user.id;
 
     const [result] = await Category.restoreSubtree(categoryId, userId);
 

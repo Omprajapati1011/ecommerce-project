@@ -1,8 +1,9 @@
 import express from "express";
 import categoryController from "../controllers/category.controller.js";
-import isAdmin from "../middlewares/admin.middleware.js";
-import authMiddleware from "../middlewares/auth.middleware.js";
+// import isAdmin from "../middlewares/admin.middleware.js";
+// import authMiddleware from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/categoryvalidate.middleware.js";
+import { auth, adminOnly } from "../middlewares/auth.middleware.js";
 
 import {
   idParamSchema,
@@ -47,16 +48,16 @@ ADMIN
 
 router.post(
   "/create",
-  authMiddleware,
-  isAdmin,
+  auth,
+  adminOnly,
   validate(createCategorySchema),
   categoryController.createCategory,
 );
 
 router.put(
   "/:id",
-  authMiddleware,
-  isAdmin,
+  auth,
+  adminOnly,
   validate(idParamSchema, "params"),
   validate(updateCategorySchema),
   categoryController.updateCategory,
@@ -64,16 +65,16 @@ router.put(
 
 router.delete(
   "/:id",
-  authMiddleware,
-  isAdmin,
+  auth,
+  adminOnly,
   validate(idParamSchema, "params"),
   categoryController.deleteCategory,
 );
 
 router.patch(
   "/:id/restore",
-  authMiddleware,
-  isAdmin,
+  auth,
+  adminOnly,
   validate(idParamSchema, "params"),
   categoryController.restoreCategory,
 );

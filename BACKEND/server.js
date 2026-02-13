@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-
+import categoryRoutes from "./routes/category.routes.js";
 // Import Routes
 // import paymentRoutes from "./routes/payments.route.js";
 import userRoute from "./routes/User.route.js";
@@ -10,7 +10,7 @@ dotenv.config();
 
 // Initialize Express app
 const app = express();
-const port = process.env.SERVER_PORT || 3000;
+const port = process.env.PORT || 3000;
 
 // ============================================================================
 // MIDDLEWARE
@@ -44,11 +44,11 @@ app.get("/", (req, res) => {
 });
 
 // API Routes
-app.use("/api/users", userRoutes);
+app.use("/api/users", userRoute);
 //app.use("/api/payments", paymentRoutes);
 // Add more routes here as you create them:
 // app.use("/api/products", productRoutes);
-// app.use("/api/categories", categoryRoutes);
+app.use("/api/category", categoryRoutes);
 // app.use("/api/cart", cartRoutes);
 // app.use("/api/orders", orderRoutes);
 

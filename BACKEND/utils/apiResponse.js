@@ -153,11 +153,10 @@ export const serverError = (res, message = "Internal server error") => {
  * @param {array} items - Array of items
  * @param {object} pagination - { page, limit, total, totalPages }
  */
-export const paginated = (res, message, items, pagination) => {
+export const paginated = (res, message, pagination, items) => {
   return res.status(HTTP_STATUS.OK).json({
     success: true,
     message,
-    data: items,
     pagination: {
       currentPage: pagination.page,
       itemsPerPage: pagination.limit,
@@ -166,6 +165,7 @@ export const paginated = (res, message, items, pagination) => {
       hasNextPage: pagination.page < pagination.totalPages,
       hasPrevPage: pagination.page > 1,
     },
+    data: items,
   });
 };
 
