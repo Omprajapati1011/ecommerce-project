@@ -95,15 +95,6 @@ const offerCreateBaseSchema = z.object({
     .max(1, "is_deleted must be 0 or 1")
     .default(0),
 
-  created_by: z.coerce
-    .number({ invalid_type_error: "created_by must be a number" })
-    .int("created_by must be an integer")
-    .min(1, "created_by is required"),
-
-  updated_by: z.coerce
-    .number({ invalid_type_error: "updated_by must be a number" })
-    .int("updated_by must be an integer")
-    .min(1, "updated_by is required"),
 });
 
 /**

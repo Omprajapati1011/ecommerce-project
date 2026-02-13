@@ -21,52 +21,65 @@ import {
   validatestatusOfferIDParam,
   validateUpdateOffer,
 } from "../middlewares/offer.validator.js";
+import {
+  auth, // verifies authenticated user
+  adminOnly, // allows only admin users
+} from "../middlewares/auth.middleware.js";
 
 // ============================================================================
 // OFFER ROUTES
 // ============================================================================
 
-export const router = express.Router();
+export const route = express.Router();
+
+// ============================================================================
+// OFFER MASTER ROUTES
+// ============================================================================
 
 /**
  * GET api/offer
  * Fetch all offers
  */
-router.get("/", getAllOfferController);
+route.get("/", auth, adminOnly, getAllOfferController);
 
 /**
  * GET api/offer/active
  * Fetch all active offers
  */
-router.get("/active", getActiveOfferController);
+route.get("/active", auth, adminOnly, getActiveOfferController);
 
 /**
  * POST api/offer/create
  * Create a new offer
  */
-router.post("/create", validateCreateOffer, createOfferController);
+route.post(
+  "/create",
+  auth,
+  adminOnly,
+  validateCreateOffer,
+  createOfferController,
+);
 
 /**
  * POST api/offer/validate
  * Validate if offer can be applied
  */
-router.post("/validate", validateOfferPayload, validateOfferController);
+route.post(
+  "/validate",
+  auth,
+  adminOnly,
+  validateOfferPayload,
+  validateOfferController,
+);
 
 /**
  * GET api/offer/usage/summary
  * Fetch summary of all offers usage (admin analytics)
  */
-router.get(
-  "/usage/summary",
-  getAllOfferUsageSummaryController
-);
-
-/**
- * patch api/offer/:id
- * update an offer by id
- */
-router.patch(
+route.patch(
   "/update/:id",
+  auth,
+  adminOnly,
   validateOfferIdParam,
   validateUpdateOffer,
   updateOfferByIdController,
@@ -76,14 +89,22 @@ router.patch(
  * delete api/offer/delete/:id
  * delete offer by id
  */
-router.delete("/delete/:id", validateOfferIdParam, deleteOfferByIdController);
+route.delete(
+  "/delete/:id",
+  auth,
+  adminOnly,
+  validateOfferIdParam,
+  deleteOfferByIdController,
+);
 
 /**
  * patch api/offer/status/:id
  * status change to activated or deactivated by id
  */
-router.patch(
+route.patch(
   "/status/:id",
+  auth,
+  adminOnly,
   validateOfferIdParam,
   validatestatusOfferIDParam,
   updateOfferStatusController,
@@ -93,32 +114,69 @@ router.patch(
  * GET api/offer/product/:id
  * Fetch offers by product id
  */
-router.get("/product/:id", validateOfferIdParam, getOfferByProductController);
+route.get(
+  "/product/:id",
+  auth,
+  adminOnly,
+  validateOfferIdParam,
+  getOfferByProductController,
+);
 
 /**
  * GET api/offer/category/:id
  * Fetch offers by category id
  */
-router.get("/category/:id", validateOfferIdParam, getOfferByCategoryController);
+route.get(
+  "/category/:id",
+  auth,
+  adminOnly,
+  validateOfferIdParam,
+  getOfferByCategoryController,
+);
+
+// ============================================================================
+// OFFER USAGE ROUTES
+// ============================================================================
+
+/**
+ * GET api/offer/usage/summary
+ * Fetch summary of all offers usage (admin analytics)
+ */
+route.get("/usage/summary", auth, adminOnly, getAllOfferUsageSummaryController);
 
 /**
  * GET api/offer/usagebyoffer/:id
  * Fetch offer usage details by offer id
  */
-router.get("/usagebyoffer/:id", validateOfferIdParam, getOfferUsageByOfferIdController);
+route.get(
+  "/usagebyoffer/:id",
+  auth,
+  adminOnly,
+  validateOfferIdParam,
+  getOfferUsageByOfferIdController,
+);
 
 /**
  * GET api/offer/usagebyuser/:id
  * Fetch offer usage details by user id
  */
-router.get("/usagebyuser/:id", validateOfferIdParam, getOfferUsageByUserIdController);
-
+route.get(
+  "/usagebyuser/:id",
+  auth,
+  adminOnly,
+  validateOfferIdParam,
+  getOfferUsageByUserIdController,
+);
 
 /**
  * GET api/offer/:id
  * Fetch a single offer by id
  */
 
-router.get("/:id", validateOfferIdParam, getOfferByIdController);
-
-
+route.get(
+  "/:id",
+  auth,
+  adminOnly,
+  validateOfferIdParam,
+  getOfferByIdController,
+);

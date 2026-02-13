@@ -66,7 +66,7 @@ export const checkOfferExist = async (offerData) => {
  * @returns {Promise<object>} Insert result
  */
 
-export const createOffer = async (offerData) => {
+export const createOffer = async (offerData, userId) => {
   const {
     offer_name,
     description,
@@ -84,8 +84,6 @@ export const createOffer = async (offerData) => {
     end_time,
     is_active,
     is_deleted,
-    created_by,
-    updated_by,
   } = offerData;
 
   const [result] = await pool.query(
@@ -107,8 +105,8 @@ export const createOffer = async (offerData) => {
       end_time,
       is_active,
       is_deleted,
-      created_by,
-      updated_by,
+      userId,
+      userId,
     ],
   );
   return result;
@@ -212,7 +210,7 @@ export const deleteOfferById = async (offerId) => {
  * @returns {Promise<object>} Update result
  */
 
-export const activeupdateOfferStatusById = async (offerId, isActive) => {
+export const activeupdateOfferStatusById = async (isActive, offerId) => {
   const [result] = await pool.query(
     `UPDATE offer_master SET is_active=? WHERE offer_id=? AND is_deleted=0`,
     [isActive, offerId],
@@ -386,8 +384,8 @@ export const getAllOfferUsageSummary = async () => {
       om.discount_value,
       COUNT(ou.offer_usage_id) AS total_usage,
       COALESCE(SUM(ou.discount_amount), 0) AS total_discount_given
-    FROM offer_master om
-    LEFT JOIN offer_usage ou
+    FROM  offer_usage ou
+    LEFT JOIN offer_master om
       ON om.offer_id = ou.offer_id
     GROUP BY 
       om.offer_id,
@@ -397,6 +395,19 @@ export const getAllOfferUsageSummary = async () => {
       om.discount_value
     ORDER BY total_usage DESC
     `);
+
+  return result;
+};
+
+export const createOfferUsage = async (offerData) => {
+  const { offer_id, user_id, order_id, discount_amount } = offerData;
+
+  const [result] = await pool.query(
+    `INSERT INTO offer_usage
+     (offer_id, user_id, order_id, discount_amount, usage_count)
+     VALUES (?, ?, ?, ?, ?)`,
+    [offer_id, user_id, order_id, discount_amount, 1],
+  );
 
   return result;
 };

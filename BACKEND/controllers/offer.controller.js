@@ -20,7 +20,6 @@ import {
   conflict,
   created,
   notFound,
-  noContent,
   ok,
   serverError,
 } from "../utils/apiResponse.js";
@@ -40,6 +39,17 @@ export const createOfferController = async (req, res) => {
   try {
     // Validate request payload before creating an offer.
     const offerData = req.body;
+    const userId = req.user.id;
+    offerData.product_id =
+      offerData.product_id && offerData.product_id > 0
+        ? Number(offerData.product_id)
+        : null;
+
+    offerData.category_id =
+      offerData.category_id && offerData.category_id > 0
+        ? Number(offerData.category_id)
+        : null;
+
     const exists = await checkOfferExist(offerData);
 
     if (exists) {
@@ -51,7 +61,8 @@ export const createOfferController = async (req, res) => {
     if (!offerData || Object.keys(offerData).length === 0) {
       return badRequest(res, "Request body is required");
     }
-    const result = await createOffer(offerData);
+
+    const result = await createOffer(offerData, userId);
 
     return created(res, "Offer created successfully", {
       offer_id: result.insertId,
@@ -70,9 +81,11 @@ export const getAllOfferController = async (req, res) => {
   try {
     // Fetch all offers.
     const result = await getAllOffer();
+
     if (!result || result.length === 0) {
       return notFound(res, "No offers found");
     }
+
     return ok(res, `${result.length} Offers fetched successfully`, result);
   } catch (error) {
     console.error(error);
@@ -90,34 +103,18 @@ export const getOfferByIdController = async (req, res) => {
     // Fetch a single offer by id.
     const offerId = req.params.id;
     const result = await getOfferById(offerId);
+
     if (!result || result.length === 0) {
       return notFound(res, "No offers found or deleted");
     }
+
     return ok(res, "Offer fetched successfully", result);
   } catch (error) {
     console.error(error);
+
     return serverError(res, error.message || "Internal server error");
   }
 };
-
-/**
- * Update an existing offer by id.
- */
-// export const updateOfferByIdController = async (req, res) => {
-//   try {
-//     // Read target id and update payload from request.
-//     const offerId = req.params.id;
-//     const offerData = req.body;
-//     const result = await updateOfferById(offerId, offerData);
-//     if (!result || result.affectedRows === 0) {
-//       return notFound(res, "No offers found");
-//     }
-//     return ok(res, "Offer updated successfully");
-//   } catch (error) {
-//     console.error(error);
-//     return serverError(res, error.message || "Internal server error");
-//   }
-// };
 
 /**
  * Update an offer by id with partial payload fields.
@@ -139,6 +136,7 @@ export const updateOfferByIdController = async (req, res) => {
     return ok(res, "Offer updated successfully");
   } catch (error) {
     console.error(error);
+
     return serverError(res, error.message || "Internal server error");
   }
 };
@@ -172,7 +170,7 @@ export const updateOfferStatusController = async (req, res) => {
     const offerId = req.params.id;
     const isActive = req.body.is_active;
 
-    const result = await activeupdateOfferStatusById(offerId, isActive);
+    const result = await activeupdateOfferStatusById(isActive, offerId);
 
     // No target row matched for update.
     if (!result || result.affectedRows === 0) {
@@ -198,13 +196,12 @@ export const updateOfferStatusController = async (req, res) => {
 export const getActiveOfferController = async (req, res) => {
   try {
     const result = await getActiveOffer();
-    
+
     if (!result || result.length === 0) {
       return notFound(res, "No offers found");
     }
 
-    return ok(res, "Active Offers fetched successfully", result);
-
+    return ok(res, `${result.length} Active Offers fetched successfully`, result);
   } catch (error) {
     console.error(error);
 
@@ -222,10 +219,10 @@ export const getOfferByProductController = async (req, res) => {
     const result = await getOfferByProductId(productId);
 
     if (!result || result.length === 0) {
-      return notFound(res, "No offers found with this productid");
+      return notFound(res, "No offers found with this productId");
     }
 
-    return ok(res, " Offers with this productid fetched successfully", result);
+    return ok(res,  `Offers with ${productId} productId fetched successfully`, result);
   } catch (error) {
     console.error(error);
 
@@ -243,10 +240,10 @@ export const getOfferByCategoryController = async (req, res) => {
     const result = await getOfferByCategoryId(categoryId);
 
     if (!result || result.length === 0) {
-      return notFound(res, "No offers found with this categoryid");
+      return notFound(res, "No offers found with this categoryId");
     }
 
-    return ok(res, " Offers with this categoryid fetched successfully", result);
+    return ok(res, `Offers with ${categoryId} categoryId fetched successfully`, result);
   } catch (error) {
     console.error(error);
 
@@ -268,7 +265,7 @@ export const validateOfferController = async (req, res) => {
     const { offer_name, total, product_id, category_id } = req.body;
 
     // TODO: read user id from authenticated request context.
-    const userId = 1;
+    const userId = req.user.id;
 
     // Step 1: Fetch a currently valid offer for provided scope.
     const result = await getValidateOfferByName(
