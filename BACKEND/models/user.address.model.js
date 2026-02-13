@@ -3,7 +3,7 @@ import pool from "../configs/db.js";
 export const addUserAddressModel = async (data) => {
   const sql = `INSERT INTO user_addresses SET ?`;
 
-  const [result] = await pool.query(sql, [data]);
+//   const [result] = await pool.query(sql, [data]);
 
   return result;
 };
