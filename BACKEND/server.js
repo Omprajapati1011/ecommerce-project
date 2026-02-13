@@ -3,8 +3,11 @@ import dotenv from "dotenv";
 
 // Import Routes
 // import paymentRoutes from "./routes/payments.route.js";
-import cartRouter from "./routes/cart.route.js";
+// import cartRouter from "./routes/cart.route.js";
 import userRoute from "./routes/User.route.js";
+import { route as offerRoute } from "./routes/offer.route.js";
+// import cartRouter from "./routes/cart.route.js";
+
 import router from "./routes/order_master.route.js"
 import router_Item from "./routes/Order_item.route.js";
 
@@ -52,8 +55,9 @@ app.use("/api",router)
 app.use("/api",router_Item)
 
 // API Routes
-app.use("/api/cart", cartRouter);
+// app.use("/api/cart", cartRouter);
 app.use("/api/users", userRoute);
+app.use("/api/offer", offerRoute);
 //app.use("/api/payments", paymentRoutes);
 // Add more routes here as you create them:
 // app.use("/api/products", productRoutes);
