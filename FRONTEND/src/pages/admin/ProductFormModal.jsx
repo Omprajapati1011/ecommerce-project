@@ -28,7 +28,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { Dropdown } from "primereact/dropdown";
 import { InputSwitch } from "primereact/inputswitch";
 import { Button } from "primereact/button";
-import { Toast } from "primereact/toast";
+import { useToast } from "../../context/ToastContext";
 import { ArrowRight } from "lucide-react";
 import { fetchCategories } from "../../../api/adminProductsApi";
 import ProductPortionsPanel from "./ProductPortionsPanel";
@@ -58,7 +58,7 @@ const validationSchema = Yup.object().shape({
         const { price } = this.parent;
         if (value === null || value === undefined) return true;
         return value < price;
-      }
+      },
     ),
   stock: Yup.number()
     .required("Stock is required")
@@ -73,11 +73,21 @@ const validationSchema = Yup.object().shape({
  * Creation flow: Basic Info → Continue → Portions → Continue → Modifiers → Save & Close
  * Edit flow: Standard Save on Basic Info, free tab navigation
  */
-function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab = 0 }) {
-  const panelToast = useRef(null);
+function ProductFormModal({
+  visible,
+  onHide,
+  product,
+  onSave,
+  onMutate,
+  saving,
+  initialTab = 0,
+}) {
+  const showToast = useToast();
+  const filePickerGuardTimerRef = useRef(null);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [filePickerActive, setFilePickerActive] = useState(false);
 
   // Wizard flow tracking
   const [isNewProductFlow, setIsNewProductFlow] = useState(false);
@@ -86,9 +96,29 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
 
   const isEditing = Boolean(product);
 
-  const showToast = useCallback((severity, summary, detail) => {
-    panelToast.current?.show({ severity, summary, detail, life: 3000 });
+  const setFilePickerGuard = useCallback((active) => {
+    if (filePickerGuardTimerRef.current) {
+      clearTimeout(filePickerGuardTimerRef.current);
+      filePickerGuardTimerRef.current = null;
+    }
+
+    if (active) {
+      setFilePickerActive(true);
+      return;
+    }
+
+    filePickerGuardTimerRef.current = setTimeout(() => {
+      setFilePickerActive(false);
+      filePickerGuardTimerRef.current = null;
+    }, 400);
   }, []);
+
+  const handleDialogHide = useCallback(() => {
+    if (filePickerActive) {
+      return;
+    }
+    onHide();
+  }, [filePickerActive, onHide]);
 
   // Fetch categories on mount
   useEffect(() => {
@@ -109,10 +139,10 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
       }
     };
 
-    if (visible) {
+    if (visible && categories.length === 0) {
       loadCategories();
     }
-  }, [visible]);
+  }, [visible, categories.length]);
 
   // Formik setup
   const formik = useFormik({
@@ -154,7 +184,9 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
           short_description: product.short_description || "",
           description: product.description || "",
           price: product.price ? Number(product.price) : null,
-          discounted_price: product.discounted_price ? Number(product.discounted_price) : null,
+          discounted_price: product.discounted_price
+            ? Number(product.discounted_price)
+            : null,
           stock: product.stock ? Number(product.stock) : null,
           category_id: product.category_id || null,
           is_active: Boolean(product.is_active),
@@ -182,6 +214,14 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, visible]);
+
+  useEffect(() => {
+    return () => {
+      if (filePickerGuardTimerRef.current) {
+        clearTimeout(filePickerGuardTimerRef.current);
+      }
+    };
+  }, []);
 
   // Callbacks from panels
   const handlePortionsCountChange = useCallback((count) => {
@@ -211,13 +251,16 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
   const handleContinueToModifiers = () => {
     if (portionsCount === 0) {
       confirmDialog({
-        message: "You haven't added any portions yet. Are you sure you want to skip? You can always add them later from the edit screen.",
+        message:
+          "You haven't added any portions yet. Are you sure you want to skip? You can always add them later from the edit screen.",
         header: "Skip Portions?",
         icon: "pi pi-exclamation-triangle",
         acceptLabel: "Yes, Skip",
         rejectLabel: "Go Back",
-        acceptClassName: "admin-btn-primary px-4 py-2 rounded-lg text-sm font-medium",
-        rejectClassName: "admin-btn-secondary px-4 py-2 rounded-lg text-sm font-medium",
+        acceptClassName:
+          "admin-btn-primary px-4 py-2 rounded-lg text-sm font-medium",
+        rejectClassName:
+          "admin-btn-secondary px-4 py-2 rounded-lg text-sm font-medium",
         accept: () => setActiveIndex(2),
       });
     } else {
@@ -228,13 +271,16 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
   const handleContinueToImages = () => {
     if (!modifiersDetected) {
       confirmDialog({
-        message: "You haven't added any modifiers yet. Are you sure you want to skip? You can always add them later from the edit screen.",
+        message:
+          "You haven't added any modifiers yet. Are you sure you want to skip? You can always add them later from the edit screen.",
         header: "Skip Modifiers?",
         icon: "pi pi-exclamation-triangle",
         acceptLabel: "Yes, Skip",
         rejectLabel: "Go Back",
-        acceptClassName: "admin-btn-primary px-4 py-2 rounded-lg text-sm font-medium",
-        rejectClassName: "admin-btn-secondary px-4 py-2 rounded-lg text-sm font-medium",
+        acceptClassName:
+          "admin-btn-primary px-4 py-2 rounded-lg text-sm font-medium",
+        rejectClassName:
+          "admin-btn-secondary px-4 py-2 rounded-lg text-sm font-medium",
         accept: () => setActiveIndex(3),
       });
     } else {
@@ -264,7 +310,7 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
           <Button
             type="button"
             label="Close"
-            onClick={onHide}
+            onClick={handleDialogHide}
             disabled={saving}
             className="admin-btn-secondary px-4 py-2 rounded-lg font-medium transition-colors"
             pt={{ root: { className: "border-none bg-transparent" } }}
@@ -277,7 +323,9 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
               onClick={formik.handleSubmit}
               disabled={saving || formik.isSubmitting}
               className="admin-btn-primary px-5 py-2 rounded-lg font-medium shadow-sm transition-colors"
-              pt={{ root: { className: "flex items-center justify-center gap-2" } }}
+              pt={{
+                root: { className: "flex items-center justify-center gap-2" },
+              }}
             >
               <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
@@ -313,7 +361,9 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
                 onClick={handleContinueToModifiers}
                 disabled={portionsCount === 0}
                 className="admin-btn-primary px-5 py-2 rounded-lg font-medium shadow-sm transition-colors"
-                pt={{ root: { className: "flex items-center justify-center gap-2" } }}
+                pt={{
+                  root: { className: "flex items-center justify-center gap-2" },
+                }}
               >
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
@@ -322,7 +372,7 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
             <Button
               type="button"
               label="Close"
-              onClick={onHide}
+              onClick={handleDialogHide}
               className="admin-btn-secondary px-4 py-2 rounded-lg font-medium transition-colors"
               pt={{ root: { className: "border-none bg-transparent" } }}
             />
@@ -348,7 +398,9 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
                 onClick={handleContinueToImages}
                 disabled={!modifiersDetected}
                 className="admin-btn-primary px-5 py-2 rounded-lg font-medium shadow-sm transition-colors"
-                pt={{ root: { className: "flex items-center justify-center gap-2" } }}
+                pt={{
+                  root: { className: "flex items-center justify-center gap-2" },
+                }}
               >
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
@@ -357,7 +409,7 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
             <Button
               type="button"
               label="Close"
-              onClick={onHide}
+              onClick={handleDialogHide}
               className="admin-btn-secondary px-4 py-2 rounded-lg font-medium transition-colors"
               pt={{ root: { className: "border-none bg-transparent" } }}
             />
@@ -372,7 +424,7 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
             <Button
               type="button"
               label="Save & Close"
-              onClick={onHide}
+              onClick={handleDialogHide}
               className="admin-btn-primary px-5 py-2 rounded-lg font-medium shadow-sm transition-colors"
               pt={{ root: { className: "flex items-center justify-center" } }}
             />
@@ -380,7 +432,7 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
             <Button
               type="button"
               label="Close"
-              onClick={onHide}
+              onClick={handleDialogHide}
               className="admin-btn-secondary px-4 py-2 rounded-lg font-medium transition-colors"
               pt={{ root: { className: "border-none bg-transparent" } }}
             />
@@ -397,12 +449,13 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
       style={{ width: "65vw" }}
       breakpoints={{ "1200px": "75vw", "960px": "85vw", "641px": "95vw" }}
       footer={footerContent}
-      onHide={onHide}
+      onHide={handleDialogHide}
       dismissableMask
       maximizable
       pt={{
         root: {
-          className: "border-0 shadow-2xl rounded-2xl overflow-hidden admin-dialog",
+          className:
+            "border-0 shadow-2xl rounded-2xl overflow-hidden admin-dialog",
         },
         header: {
           className: "admin-dialog-header px-6 py-5 border-b",
@@ -415,27 +468,35 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
           className: "admin-dialog-footer px-6 py-4 border-t rounded-b-2xl",
         },
         closeButton: {
-          className: "w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors",
+          className:
+            "w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors",
         },
         maximizableButton: {
-          className: "w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors",
+          className:
+            "w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors",
         },
       }}
     >
-      <Toast ref={panelToast} position="top-right" />
       <ConfirmDialog />
 
       <TabView
         activeIndex={activeIndex}
         onTabChange={(e) => setActiveIndex(e.index)}
         pt={{
-          nav: { className: "admin-tabview-nav border-b border-gray-200 dark:border-gray-700 px-6" },
+          nav: {
+            className:
+              "admin-tabview-nav border-b border-gray-200 dark:border-gray-700 px-6",
+          },
           panelContainer: { className: "p-6" },
         }}
       >
         {/* ════════════════════ Tab 1: Basic Info ════════════════════ */}
         <TabPanel header="Basic Info">
-          <form onSubmit={formik.handleSubmit} autoComplete="off" className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2 font-sans">
+          <form
+            onSubmit={formik.handleSubmit}
+            autoComplete="off"
+            className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2 font-sans"
+          >
             {/* System Name field */}
             <div className="flex flex-col gap-2">
               <label
@@ -473,7 +534,9 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 className={`admin-input w-full rounded-lg h-10 px-3 text-sm ${
-                  isFieldInvalid("display_name") ? "p-invalid border-red-500" : ""
+                  isFieldInvalid("display_name")
+                    ? "p-invalid border-red-500"
+                    : ""
                 }`}
                 placeholder="e.g. iPhone 15 Pro"
               />
@@ -495,14 +558,17 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
                 onChange={(e) => formik.setFieldValue("category_id", e.value)}
                 onBlur={formik.handleBlur}
                 options={categories}
-                placeholder={loadingCategories ? "Loading..." : "Select a Category"}
+                placeholder={
+                  loadingCategories ? "Loading..." : "Select a Category"
+                }
                 disabled={loadingCategories}
                 className={`admin-dropdown w-full ${
                   isFieldInvalid("category_id") ? "p-invalid" : ""
                 }`}
                 pt={{
                   root: {
-                    className: "admin-dropdown-root rounded-lg h-10 flex items-center shadow-none",
+                    className:
+                      "admin-dropdown-root rounded-lg h-10 flex items-center shadow-none",
                   },
                   input: {
                     className: "px-3 text-sm",
@@ -534,7 +600,8 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
                 className={`admin-inputnumber-wrap w-full ${isFieldInvalid("stock") ? "p-invalid" : ""}`}
                 pt={{
                   input: {
-                    className: "admin-input w-full rounded-lg h-10 px-3 text-sm",
+                    className:
+                      "admin-input w-full rounded-lg h-10 px-3 text-sm",
                     autoComplete: "off",
                   },
                 }}
@@ -601,7 +668,8 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
                 className={`admin-inputnumber-wrap w-full ${isFieldInvalid("price") ? "p-invalid" : ""}`}
                 pt={{
                   input: {
-                    className: "admin-input w-full rounded-lg h-10 px-3 text-sm",
+                    className:
+                      "admin-input w-full rounded-lg h-10 px-3 text-sm",
                     autoComplete: "off",
                   },
                 }}
@@ -621,7 +689,9 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
                 inputId="discounted_price"
                 name="discounted_price"
                 value={formik.values.discounted_price}
-                onValueChange={(e) => formik.setFieldValue("discounted_price", e.value)}
+                onValueChange={(e) =>
+                  formik.setFieldValue("discounted_price", e.value)
+                }
                 onBlur={formik.handleBlur}
                 mode="currency"
                 currency="INR"
@@ -629,7 +699,8 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
                 className={`admin-inputnumber-wrap w-full ${isFieldInvalid("discounted_price") ? "p-invalid" : ""}`}
                 pt={{
                   input: {
-                    className: "admin-input w-full rounded-lg h-10 px-3 text-sm",
+                    className:
+                      "admin-input w-full rounded-lg h-10 px-3 text-sm",
                     autoComplete: "off",
                   },
                 }}
@@ -667,19 +738,22 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
           {isEditing ? (
             <ProductPortionsPanel
               product={product}
-              showToast={showToast}
               onCountChange={handlePortionsCountChange}
+              onMutate={onMutate}
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center mb-4">
-                <span className="text-amber-600 dark:text-amber-400 text-xl font-semibold">!</span>
+                <span className="text-amber-600 dark:text-amber-400 text-xl font-semibold">
+                  !
+                </span>
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Save the product first
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
-                Click &quot;Continue&quot; on the Basic Info tab to save the product, then you can assign portions here.
+                Click &quot;Continue&quot; on the Basic Info tab to save the
+                product, then you can assign portions here.
               </p>
             </div>
           )}
@@ -690,19 +764,22 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
           {isEditing ? (
             <ProductModifiersPanel
               product={product}
-              showToast={showToast}
               onCountChange={handleModifiersCountChange}
+              onMutate={onMutate}
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center mb-4">
-                <span className="text-amber-600 dark:text-amber-400 text-xl font-semibold">!</span>
+                <span className="text-amber-600 dark:text-amber-400 text-xl font-semibold">
+                  !
+                </span>
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Save the product first
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
-                Click &quot;Continue&quot; on the Basic Info tab to save the product, then manage modifiers here.
+                Click &quot;Continue&quot; on the Basic Info tab to save the
+                product, then manage modifiers here.
               </p>
             </div>
           )}
@@ -713,18 +790,22 @@ function ProductFormModal({ visible, onHide, product, onSave, saving, initialTab
           {isEditing ? (
             <ProductImagesPanel
               product={product}
-              showToast={showToast}
+              onMutate={onMutate}
+              onFilePickerStateChange={setFilePickerGuard}
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center mb-4">
-                <span className="text-amber-600 dark:text-amber-400 text-xl font-semibold">!</span>
+                <span className="text-amber-600 dark:text-amber-400 text-xl font-semibold">
+                  !
+                </span>
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Save the product first
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
-                Click &quot;Continue&quot; on the Basic Info tab to save the product, then upload images here.
+                Click &quot;Continue&quot; on the Basic Info tab to save the
+                product, then upload images here.
               </p>
             </div>
           )}

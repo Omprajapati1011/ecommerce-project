@@ -3,9 +3,19 @@ import { z } from "zod";
 /* ================= REGISTER ================= */
 
 export const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().min(1, "Email is required").email("Invalid email format"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().trim().min(2, "Name must be at least 2 characters"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Invalid email format"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#^()_\-+=])[A-Za-z\d@$!%*?&.#^()_\-+=]{8,}$/,
+      "Password must include uppercase, lowercase, number, and special character",
+    ),
 });
 
 /* ================= LOGIN ================= */
@@ -29,6 +39,26 @@ export const forgotPasswordOtpRequestSchema = z.object({
 });
 
 export const forgotPasswordOtpVerifySchema = z.object({
+  email: z.string().email("Invalid email"),
+  otp: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
+  otpToken: z.string().min(1, "otpToken is required"),
+});
+
+export const emailChangeOtpRequestSchema = z.object({
+  newEmail: z.string().email("Invalid email"),
+});
+
+export const emailChangeOtpVerifySchema = z.object({
+  newEmail: z.string().email("Invalid email"),
+  otp: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
+  otpToken: z.string().min(1, "otpToken is required"),
+});
+
+export const deleteAccountOtpRequestSchema = z.object({
+  email: z.string().email("Invalid email"),
+});
+
+export const deleteAccountOtpVerifySchema = z.object({
   email: z.string().email("Invalid email"),
   otp: z.string().regex(/^\d{6}$/, "OTP must be 6 digits"),
   otpToken: z.string().min(1, "otpToken is required"),
@@ -81,6 +111,10 @@ export const updatePasswordSchema = z
 
 export const idParamSchema = z.object({
   id: z.string().regex(/^\d+$/, "Invalid ID"),
+});
+
+export const addressIdParamSchema = z.object({
+  addressId: z.string().regex(/^\d+$/, "Invalid address ID"),
 });
 
 /* ================= ADDRESS VALIDATION ================= */

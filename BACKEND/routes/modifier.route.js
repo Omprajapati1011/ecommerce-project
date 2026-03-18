@@ -145,4 +145,56 @@ modifierRouter.patch(
 //   patchModifierPortionController,
 // );
 
+import {
+  getCombinationsByPortionController,
+  getCombinationsByProductController,
+  getCombinationByIdController,
+  createCombinationController,
+  updateCombinationController,
+  deleteCombinationController,
+} from "../controllers/modifier.controller.js";
+
+// ============================================================================
+// MODIFIER COMBINATION ROUTES
+// ============================================================================
+
+// GET /api/modifiers/combinations/by-portion/:product_portion_id (Public)
+modifierRouter.get(
+  "/combinations/by-portion/:product_portion_id",
+  getCombinationsByPortionController,
+);
+
+// GET /api/modifiers/combinations/by-product/:product_id (Public)
+modifierRouter.get(
+  "/combinations/by-product/:product_id",
+  getCombinationsByProductController,
+);
+
+// GET /api/modifiers/combinations/:id (Public)
+modifierRouter.get("/combinations/:id", getCombinationByIdController);
+
+// POST /api/modifiers/combinations (Admin only)
+modifierRouter.post(
+  "/combinations",
+  auth,
+  adminOnly,
+  createCombinationController,
+);
+
+// PUT /api/modifiers/combinations/:id (Admin only)
+modifierRouter.put(
+  "/combinations/:id",
+  auth,
+  adminOnly,
+  updateCombinationController,
+);
+
+// DELETE /api/modifiers/combinations/:id (Admin only)
+modifierRouter.delete(
+  "/combinations/:id",
+  auth,
+  adminOnly,
+  deleteCombinationController,
+);
+
 export default modifierRouter;

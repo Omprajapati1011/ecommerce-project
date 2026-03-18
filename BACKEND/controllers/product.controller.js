@@ -1,13 +1,11 @@
 import db from "../configs/db.js";
-import Product from "../models/product.model.js";
+import Product, { findBestSellers } from "../models/product.model.js";
 import {
   ok,
   created,
   badRequest,
   notFound,
   serverError,
-  paginated,
-  validationError,
 } from "../utils/apiResponse.js";
 
 export const createProduct = async (req, res) => {
@@ -115,7 +113,7 @@ export const getAllProducts = async (req, res) => {
 
     const { total, data, totalAll, totalActive } = await Product.findAll(
       filters,
-      { limit, offset, sortField, sortOrder }
+      { limit, offset, sortField, sortOrder },
     );
 
     return res.status(200).json({
@@ -262,6 +260,20 @@ export const updateProductStatus = async (req, res) => {
     }
 
     return ok(res, "Product updated successfully");
+  } catch (err) {
+    return serverError(res, err.message);
+  }
+};
+
+// Get Best Sellers
+export const getBestSellers = async (req, res) => {
+  try {
+    const limit = Math.min(20, parseInt(req.query.limit) || 8);
+    const [rows] = await findBestSellers(limit);
+    return ok(res, "Best sellers fetched successfully", {
+      count: rows.length,
+      items: rows,
+    });
   } catch (err) {
     return serverError(res, err.message);
   }

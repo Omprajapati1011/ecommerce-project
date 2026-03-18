@@ -15,7 +15,13 @@ import { InputSwitch } from "primereact/inputswitch";
 import { Skeleton } from "primereact/skeleton";
 import { Pencil, Trash2 } from "lucide-react";
 
-function AdminPortionsTable({ portions, loading, onEdit, onDelete, onToggleStatus }) {
+function AdminPortionsTable({
+  portions,
+  loading,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+}) {
   const valueBodyTemplate = (rowData) => (
     <span className="font-medium text-gray-900 dark:text-gray-100">
       {rowData.portion_value}
@@ -35,7 +41,9 @@ function AdminPortionsTable({ portions, loading, onEdit, onDelete, onToggleStatu
         onChange={(e) => onToggleStatus(rowData, e.value)}
         className="admin-status-switch"
       />
-      <span className={`text-xs font-medium ${rowData.is_active ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
+      <span
+        className={`text-xs font-medium ${rowData.is_active ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}
+      >
         {rowData.is_active ? "Active" : "Inactive"}
       </span>
     </div>
@@ -71,7 +79,9 @@ function AdminPortionsTable({ portions, loading, onEdit, onDelete, onToggleStatu
   );
 
   // Skeleton templates
-  const skeletonTemplate = () => <Skeleton height="1.25rem" className="w-[80%]" />;
+  const skeletonTemplate = () => (
+    <Skeleton height="1.25rem" className="w-[80%]" />
+  );
   const skeletonSwitchTemplate = () => (
     <div className="flex items-center gap-2">
       <Skeleton width="2.5rem" height="1.25rem" borderRadius="1rem" />
@@ -85,7 +95,9 @@ function AdminPortionsTable({ portions, loading, onEdit, onDelete, onToggleStatu
     </div>
   );
 
-  const skeletonData = Array.from({ length: 5 }, (_, i) => ({ portion_id: `skeleton-${i}` }));
+  const skeletonData = Array.from({ length: 6 }, (_, i) => ({
+    portion_id: `skeleton-${i}`,
+  }));
 
   return (
     <div className="admin-products-table-wrapper flex-1 flex flex-col min-h-0">
@@ -93,21 +105,30 @@ function AdminPortionsTable({ portions, loading, onEdit, onDelete, onToggleStatu
         value={loading ? skeletonData : portions}
         dataKey="portion_id"
         scrollable
+        scrollHeight="calc(100vh - 18rem)"
+        paginator={!loading && portions.length > 5}
+        rows={10}
+        rowsPerPageOptions={[5, 10, 25]}
+        stateStorage="local"
+        stateKey="admin-portions-dt-state"
         emptyMessage="No portions found."
         className="admin-products-table"
         tableStyle={{ minWidth: "40rem" }}
+        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
       >
         <Column
           field="portion_id"
           header="ID"
           body={loading ? skeletonTemplate : null}
           style={{ width: "5rem" }}
+          sortable={!loading}
         />
         <Column
           field="portion_value"
           header="Portion Value"
           body={loading ? skeletonTemplate : valueBodyTemplate}
           style={{ minWidth: "12rem" }}
+          sortable={!loading}
         />
         <Column
           field="description"

@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import categoryRoutes from "./routes/category.routes.js";
 // Import Routes
@@ -11,10 +12,10 @@ import cartRouter from "./routes/cart.route.js";
 import { route as offerRoute } from "./routes/offer.route.js";
 import reviewRouter from "./routes/review.routes.js";
 import modifierRoute from "./routes/modifier.route.js";
-import cors from 'cors'
 import productRoutes from "./routes/product.route.js";
 import productImageRoutes from "./routes/productImage.route.js";
-
+import analyticsRoutes from "./routes/analytics.route.js";
+import settingsRoutes from "./routes/settings.route.js";
 
 // Load environment variables
 dotenv.config();
@@ -22,32 +23,25 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:5174",
-  "http://127.0.0.1:5174",
-];
-
-const corsOptions = {
-  origin(origin, callback) {
-    // Allow non-browser clients (no Origin header), and allowed frontend origins.
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+    ],
+    credentials: true,
+  }),
+);
 const port = process.env.PORT || 3000;
 
 // ============================================================================
 // MIDDLEWARE
 // ============================================================================
+// Enable CORS for frontend requests
+
 // Parse JSON request bodies (skip for Stripe webhook - it needs raw body)
 app.use((req, res, next) => {
   if (req.originalUrl === "/api/payments/webhook") {
@@ -75,39 +69,31 @@ app.get("/", (req, res) => {
       payments: "/api/payments",
       modifiers: "/api/modifiers",
       cart: "/api/cart",
-      // products: "/api/products",
+      products: "/api/products",
       category: "/api/category",
       offer: "/api/offer",
       review: "/api/review",
-      // cart: "/api/cart",
-      // orders: "/api/orders",
     },
   });
 });
-// app.use("/", (req, res) => {
-//  res.send("Om prajapati");
-// });
-app.use("/api/order", orderRouter)
-app.use("/api/order-item", orderItemRouter)
+app.use("/api/order", orderRouter);
+app.use("/api/order-item", orderItemRouter);
 
 // API Routes
 app.use("/api/users", userRoute);
-// app.use("/api/cart", cartRouter);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/portion", portionRouter);
 app.use("/api/review", reviewRouter);
-app.use("/api/cart",cartRouter);
-
+app.use("/api/cart", cartRouter);
 
 // app.use("/api/offer", offerRoute);
 app.use("/api/modifiers", modifierRoute);
 app.use("/api/category", categoryRoutes);
 app.use("/api/offer", offerRoute);
-// Add more routes here as you create them:
 app.use("/api/products", productRoutes);
 app.use("/api/productImages", productImageRoutes);
-// app.use("/api/categories", categoryRoutes);
-// app.use("/api/orders", orderRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // ============================================================================
 // ERROR HANDLING
@@ -146,6 +132,5 @@ app.listen(port, () => {
   console.log(`  - Offer: http://localhost:${port}/api/offer`);
   console.log(`  - Portion: http://localhost:${port}/api/products`);
   console.log(`  - Order: http://localhost:${port}/api/order`);
+  console.log(`  - Order: http://localhost:3306/api/category`);
 });
-
-

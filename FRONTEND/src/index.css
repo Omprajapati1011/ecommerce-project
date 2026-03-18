@@ -2,6 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ================================================= */
+/*                 THEME VARIABLES                   */
+/* ================================================= */
+
+:root {
+  --primary-color: #2f7a6f;
+  --primary-hover: #26635a;
+  --primary-light: rgba(47, 122, 111, 0.08);
+  --primary-light-hover: rgba(47, 122, 111, 0.06);
+  --primary-focus-ring: rgba(47, 122, 111, 0.2);
+}
+
+/* ================================================= */
+/*               GLOBAL CUSTOM SCROLLBAR             */
+/* ================================================= */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(47, 122, 111, 0.5) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(47, 122, 111, 0.5);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(47, 122, 111, 0.8);
+}
+
+.dark *::-webkit-scrollbar-thumb,
+html.dark::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+.dark *::-webkit-scrollbar-thumb:hover,
+html.dark::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
+
+.app-toast-offset.p-toast {
+  top: 6.25rem !important;
+}
+
+@media (max-width: 768px) {
+  .app-toast-offset.p-toast {
+    top: 5.5rem !important;
+    right: 1rem !important;
+    left: 1rem !important;
+    width: auto !important;
+  }
+}
+
+.dark *,
+html.dark {
+  scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+}
+
+/* ================================================= */
+/*                     BASE LAYER                    */
+/* ================================================= */
+
 @layer base {
   html,
   body,
@@ -13,7 +84,6 @@
     @apply text-gray-900;
     font-family: "Jost", sans-serif;
     background-color: #f3ecdf;
-    overflow: hidden;
   }
 
   .dark body {
@@ -36,7 +106,10 @@
   }
 }
 
-/* ─── PrimeReact Slider theming ─── */
+/* ================================================= */
+/*              PrimeReact Slider Theming            */
+/* ================================================= */
+
 .p-slider.p-component {
   background: #cbd5e1 !important;
   border-radius: 6px !important;
@@ -45,22 +118,22 @@
 }
 
 .p-slider .p-slider-range {
-  background: #2f7a6f !important;
+  background: var(--primary-color) !important;
 }
 
 .p-slider .p-slider-handle {
-  border: 2px solid #2f7a6f !important;
+  border: 2px solid var(--primary-color) !important;
   background: #fff !important;
   width: 18px !important;
   height: 18px !important;
   border-radius: 50% !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  margin-top: -7px !important; /* 18px handle - 6px track = 12px diff / 2 = 6px (approx 7 to center visual) */
+  margin-top: -7px !important;
 }
 
 .p-slider .p-slider-handle:hover {
-  background: #2f7a6f !important;
-  border-color: #2f7a6f !important;
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
   transform: scale(1.1);
   transition: transform 0.2s;
 }
@@ -70,17 +143,21 @@
 }
 
 .dark .p-slider .p-slider-range {
-  background: #2f7a6f !important;
+  background: var(--primary-color) !important;
 }
 
 .dark .p-slider .p-slider-handle {
-  border-color: #2f7a6f !important;
+  border-color: var(--primary-color) !important;
   background: #0f172a !important;
 }
 
 .dark .p-slider .p-slider-handle:hover {
-  background: #2f7a6f !important;
+  background: var(--primary-color) !important;
 }
+
+/* ================================================= */
+/*                    Sidebar                        */
+/* ================================================= */
 
 @layer components {
   .shopsphere-sidebar {
@@ -104,48 +181,80 @@
   }
 }
 
-/* ─── PrimeReact Checkbox theming ─── */
+/* ================================================= */
+/*                PrimeReact Checkbox                */
+/* ================================================= */
+
 .p-checkbox .p-checkbox-box.p-highlight {
-  border-color: #2f7a6f !important;
-  background: #2f7a6f !important;
+  border-color: var(--primary-color) !important;
+  background: var(--primary-color) !important;
 }
 
 .p-checkbox:not(.p-checkbox-disabled) .p-checkbox-box.p-highlight:hover {
-  border-color: #26635a !important;
-  background: #26635a !important;
+  border-color: var(--primary-hover) !important;
+  background: var(--primary-hover) !important;
 }
 
 .p-checkbox:not(.p-checkbox-disabled) .p-checkbox-box:hover {
-  border-color: #2f7a6f !important;
+  border-color: var(--primary-color) !important;
 }
 
 .p-checkbox:not(.p-checkbox-disabled) .p-checkbox-box.p-focus {
-  box-shadow: 0 0 0 2px rgba(47, 122, 111, 0.2) !important;
-  border-color: #2f7a6f !important;
+  box-shadow: 0 0 0 2px var(--primary-focus-ring) !important;
+  border-color: var(--primary-color) !important;
 }
 
-/* ─── PrimeReact Dropdown theming ─── */
+/* ================================================= */
+/*                PrimeReact Dropdown                */
+/* ================================================= */
+
 .p-dropdown:not(.p-disabled).p-focus {
-  box-shadow: 0 0 0 2px rgba(47, 122, 111, 0.2) !important;
-  border-color: #2f7a6f !important;
+  box-shadow: 0 0 0 2px var(--primary-focus-ring) !important;
+  border-color: var(--primary-color) !important;
 }
 
 .p-dropdown:not(.p-disabled):hover {
-  border-color: #2f7a6f !important;
+  border-color: var(--primary-color) !important;
 }
 
 .p-dropdown-panel .p-dropdown-item.p-highlight {
-  color: #2f7a6f !important;
+  color: var(--primary-color) !important;
   background: rgba(47, 122, 111, 0.04) !important;
 }
 
 .p-dropdown-panel .p-dropdown-item:not(.p-highlight):not(.p-disabled):hover {
-  color: #2f7a6f !important;
+  color: var(--primary-color) !important;
   background: rgba(47, 122, 111, 0.04) !important;
 }
 
-/* ─── PrimeReact DataTable theming ─── */
+.dark .p-dropdown-panel {
+  background: #0f161a !important;
+  border-color: #223038 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .p-dropdown-panel .p-dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+.dark .p-dropdown-panel .p-dropdown-item.p-highlight {
+  color: #e2e8f0 !important;
+  background: rgba(47, 122, 111, 0.18) !important;
+}
+
+.dark
+  .p-dropdown-panel
+  .p-dropdown-item:not(.p-highlight):not(.p-disabled):hover {
+  color: #e2e8f0 !important;
+  background: rgba(47, 122, 111, 0.14) !important;
+}
+
+/* ================================================= */
+/*                PrimeReact DataTable               */
+/* ================================================= */
+
 /* Force Light Mode Transparent Backgrounds */
+
 html:not(.dark) .p-datatable .p-datatable-header,
 html:not(.dark) .p-datatable .p-datatable-thead > tr > th,
 html:not(.dark) .p-datatable .p-datatable-thead > tr > th.p-highlight,
@@ -165,7 +274,8 @@ html:not(.dark)
   background: rgba(0, 0, 0, 0.02) !important;
 }
 
-/* Dark Mode Overrides */
+/* Dark Mode */
+
 .dark .p-datatable .p-datatable-header {
   background: #151e22 !important;
   color: #e2e8f0 !important;
@@ -193,179 +303,541 @@ html:not(.dark)
   color: #e2e8f0 !important;
 }
 
-/* Admin users table */
-.admin-user-table-wrap {
-  border: 1px solid #e6d9c2;
+/* ================================================= */
+/*                  PrimeReact Tree                  */
+/* ================================================= */
+
+.p-tree:focus,
+.p-tree.p-focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.p-tree {
+  padding: 0;
+  font-size: 13px;
+  background: transparent;
+  border: none;
+}
+
+/* Remove default focus outline */
+
+.p-tree .p-treenode-content:focus,
+.p-tree .p-treenode-content.p-focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* last add */
+
+*:focus {
+  outline: none !important;
+}
+
+/* Node spacing */
+
+.p-tree .p-treenode-content {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+/* Child indentation */
+
+.p-tree .p-treenode-children {
+  padding-left: 1.25rem;
+}
+
+/* Hover */
+
+.p-tree .p-treenode-content:hover {
+  background: var(--primary-light-hover);
+}
+
+/* Selected */
+
+.p-tree .p-treenode-content.p-highlight {
+  background: var(--primary-light) !important;
+  border: 1px solid var(--primary-color) !important;
+  color: inherit !important;
+}
+
+/* Toggle icon color */
+
+.p-tree .p-treenode-content.p-highlight .p-tree-toggler {
+  color: var(--primary-color) !important;
+}
+
+/* Checkbox spacing */
+
+.p-tree .p-checkbox {
+  margin-right: 6px;
+}
+
+.p-tree .p-checkbox .p-checkbox-box {
+  background: #ffffff !important;
+  border: 1.5px solid #94a3b8 !important;
+}
+
+.p-tree .p-checkbox:not(.p-checkbox-disabled) .p-checkbox-box:hover {
+  border-color: var(--primary-color) !important;
+}
+
+.p-tree .p-checkbox .p-checkbox-box.p-highlight,
+.p-tree .p-checkbox.p-highlight .p-checkbox-box {
+  border-color: var(--primary-color) !important;
+  background: var(--primary-color) !important;
+}
+
+.p-tree .p-checkbox .p-checkbox-box .p-checkbox-icon {
+  color: #ffffff !important;
+}
+
+.dark .p-tree .p-checkbox .p-checkbox-box {
+  background: #0f172a !important;
+  border-color: #64748b !important;
+}
+
+.p-tree .p-treenode-content:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.p-tree .p-treenode-content.p-focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.p-tree .p-checkbox .p-checkbox-input:focus + .p-checkbox-box {
+  box-shadow: none !important;
+}
+
+.p-tree .p-checkbox .p-checkbox-box.p-focus {
+  box-shadow: 0 0 0 2px var(--primary-focus-ring) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.category-filter-tree .p-treenode-content,
+.category-filter-tree .p-treenode-content:focus,
+.category-filter-tree .p-treenode-content:focus-visible,
+.category-filter-tree .p-treenode-content.p-focus,
+.category-filter-tree .p-tree-toggler:focus,
+.category-filter-tree .p-tree-toggler:focus-visible,
+.category-filter-tree .p-treenode-label:focus,
+.category-filter-tree .p-treenode-label:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove ripple */
+
+.p-tree .p-ripple-element {
+  display: none !important;
+}
+
+/* ================= DARK MODE ================= */
+
+.dark .p-tree .p-treenode-content:hover {
+  background: rgba(47, 122, 111, 0.12);
+}
+
+.dark .p-tree .p-treenode-content.p-highlight {
+  background: rgba(47, 122, 111, 0.15) !important;
+  border: 1px solid var(--primary-color) !important;
+}
+
+/* card outline animation */
+.trace-card {
+  position: relative;
   border-radius: 16px;
+}
+
+/* remove real border from card */
+.trace-card-inner.p-card {
+  border: none !important;
+  border-radius: 16px !important;
   overflow: hidden;
-  background: #fffaf1;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  position: relative;
+  z-index: 2;
 }
 
-.admin-user-table .p-datatable-header {
-  background: #f8efdf !important;
-  border: 0 !important;
-  border-bottom: 1px solid #eadcc6 !important;
-  padding: 1rem !important;
+.trace-card-inner.p-card .p-card-body,
+.trace-card-inner.p-card .p-card-content {
+  position: relative;
+  z-index: 4;
 }
 
-.admin-user-table .p-datatable-thead > tr > th {
-  background: #fffaf1 !important;
-  border-color: #eadcc6 !important;
-  color: #334155 !important;
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 0.85rem 0.9rem;
+.dark .trace-card-inner.p-card {
+  background: #0f161a !important;
+  border: 1px solid #1f2a33 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.admin-user-table .p-datatable-tbody > tr > td {
-  border-color: #f1e7d7 !important;
-  padding: 0.85rem 0.9rem;
-  background: #fffdf8 !important;
+.trace-svg {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  pointer-events: none;
+  z-index: 3;
 }
 
-.admin-user-table .p-datatable-tbody > tr:hover > td {
-  background: #fff6e7 !important;
+.trace-base {
+  fill: none;
+  stroke: rgba(8, 154, 127, 0.3);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
 }
 
-.admin-user-table .p-paginator {
-  background: #fffaf1 !important;
-  border: 0 !important;
-  border-top: 1px solid #eadcc6 !important;
-  padding: 0.65rem 0.9rem;
+.trace-run {
+  fill: none;
+  stroke: rgba(11, 131, 97, 0.9);
+  stroke-width: 1.8;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-dasharray: 128 28 128 28;
+  stroke-dashoffset: 100;
+  opacity: 0;
 }
 
-.admin-table-toolbar .p-button.p-button-outlined {
-  border-color: #d8c4a0 !important;
-  color: #5c4427 !important;
-  height: 2.75rem;
-  border-radius: 10px !important;
-  display: inline-flex;
-  align-items: center;
+.trace-card:hover .trace-run {
+  opacity: 0.8;
+  animation: traceMove 1.1s linear infinite;
 }
 
-.admin-table-toolbar .p-button.p-button-outlined:hover {
-  background: #ffefd3 !important;
-  border-color: #c9a976 !important;
-}
-
-.admin-toolbar-select {
-  min-width: 8.5rem;
-}
-
-.admin-toolbar-select.p-dropdown {
-  border: 1px solid #d6c7ae !important;
-  border-radius: 10px !important;
-  background: #fff9f0 !important;
-  height: 2.75rem;
-}
-
-.admin-toolbar-select .p-dropdown-label {
-  line-height: 2.75rem !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  color: #1f2937 !important;
-}
-
-.admin-search {
-  display: block;
+/* category page styling */
+.category-page {
   position: relative;
 }
 
-.admin-search .p-inputtext {
-  width: 100%;
-  height: 2.75rem;
-  border: 1px solid #d6c7ae !important;
-  background: #fff9f0 !important;
-  border-radius: 10px !important;
-  color: #1f2937 !important;
-  padding-left: 2rem !important;
+.category-page::before {
+  content: none;
 }
 
-.admin-search .pi {
-  color: #6b7280;
-  left: 0.65rem !important;
-  top: 50% !important;
-  transform: translateY(-50%);
-  margin-top: 0 !important;
+.category-page > .container {
+  position: relative;
+  z-index: 1;
 }
 
-.admin-badge {
-  border-radius: 9999px !important;
-  font-size: 0.75rem !important;
-  line-height: 1 !important;
-  padding: 0.35rem 0.55rem !important;
-  border: none !important;
-  font-weight: 600 !important;
+.category-page-layout {
+  align-items: flex-start;
 }
 
-.admin-badge--role {
-  background: #d9ecff !important;
-  color: #0f5f99 !important;
+.category-filter-panel {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.admin-badge--active {
-  background: #d6f5df !important;
-  color: #146c3b !important;
+.category-filter-panel .p-tree {
+  background: transparent;
 }
 
-.admin-badge--blocked {
-  background: #fde2e2 !important;
-  color: #b42318 !important;
+.category-search-bar {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
 }
 
-.dark .admin-user-table-wrap {
-  background: #10181d;
-  border-color: #2a3945;
+.category-search-bar:focus-within {
+  box-shadow:
+    0 0 0 2px rgba(47, 122, 111, 0.25),
+    0 18px 36px rgba(0, 0, 0, 0.12);
 }
 
-.dark .admin-user-table .p-datatable-header {
-  background: #162126 !important;
-  border-bottom-color: #2a3945 !important;
+.selected-filter-chip {
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.dark .admin-user-table .p-datatable-thead > tr > th {
-  background: #121b20 !important;
-  border-color: #2a3945 !important;
-  color: #d7e1ea !important;
-}
-
-.dark .admin-user-table .p-datatable-tbody > tr > td {
-  border-color: #2a3945 !important;
-  background: #151f24 !important;
-  color: #d7e1ea !important;
-}
-
-.dark .admin-user-table .p-datatable-tbody > tr:hover > td {
-  background: #1b2830 !important;
-}
-
-.dark .admin-user-table .p-paginator {
-  background: #121b20 !important;
-  border-top-color: #2a3945 !important;
-}
-
-.dark .admin-toolbar-select.p-dropdown {
-  background: #1a262d !important;
-  border-color: #32424f !important;
-}
-
-.dark .admin-toolbar-select .p-dropdown-label,
-.dark .admin-toolbar-select .p-dropdown-trigger {
-  color: #dbe4ed !important;
-}
-
-.dark .admin-search .p-inputtext {
-  background: #1a262d !important;
-  border-color: #32424f !important;
+.selected-filter-chip-dark {
+  background: #0f161a !important;
+  border-color: #223038 !important;
   color: #e2e8f0 !important;
 }
 
-.dark .admin-table-toolbar .p-button.p-button-outlined {
-  border-color: #476179 !important;
-  color: #c6d4e1 !important;
+.selected-filter-chip-dark .p-chip-text {
+  color: #e2e8f0 !important;
 }
 
-.dark .admin-table-toolbar .p-button.p-button-outlined:hover {
-  background: #20313d !important;
-  border-color: #5d7790 !important;
+.category-product-grid {
+  position: relative;
+}
+
+.category-product-card {
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.trace-card:hover .trace-card-inner.p-card {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 0 0 rgba(47, 122, 111, 0.9),
+    0 18px 36px rgba(47, 122, 111, 0.22),
+    0 0 36px rgba(47, 122, 111, 0.35) !important;
+}
+
+.category-product-media {
+  background: transparent !important;
+  border-top-left-radius: var(--inner-top-radius);
+  border-top-right-radius: var(--inner-top-radius);
+  overflow: hidden;
+}
+
+.category-product-card .product-card-content h4 {
+  letter-spacing: 0.01em;
+}
+
+/* Shopsphere micro-animations */
+.shopsphere-added-pop {
+  animation: shopspherePop 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shopsphere-added-btn {
+  border-color: rgba(34, 197, 94, 0.7) !important;
+  color: rgb(22, 163, 74) !important;
+}
+
+.shopsphere-cart-pulse {
+  animation: shopspherePulse 650ms ease-out;
+}
+
+.shopsphere-add-error {
+  animation: shopsphereShake 500ms ease-in-out;
+}
+
+@keyframes shopspherePop {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow: none;
+  }
+  40% {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 18px 35px rgba(47, 122, 111, 0.18);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: none;
+  }
+}
+
+@keyframes shopspherePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.0);
+    border-color: rgba(34, 197, 94, 0.0);
+  }
+  35% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.0);
+    border-color: rgba(34, 197, 94, 0.0);
+  }
+}
+
+@keyframes shopsphereShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+/* ─── Fly-to-Cart ─────────────────────────────────── */
+
+/* Outer wrapper: handles the linear X+Y translation */
+.shopsphere-fly-to-cart {
+  position: fixed;
+  z-index: 9999;
+  width: 56px;
+  height: 56px;
+  margin-left: -28px;
+  margin-top: -28px;
+  pointer-events: none;
+  /* transition replaced by keyframe animation set via JS */
+}
+
+/* Inner wrapper: the visible bubble */
+.shopsphere-fly-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(47, 122, 111, 0.96);
+  box-shadow:
+    0 8px 32px rgba(47, 122, 111, 0.45),
+    0 2px 8px rgba(0,0,0,0.18);
+  overflow: hidden;
+  transform: scale(1);
+  transition: transform 0.15s ease;
+  border: 2.5px solid rgba(255,255,255,0.35);
+}
+
+.shopsphere-fly-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shopsphere-fly-dot {
+  background: radial-gradient(circle at 35% 35%, #a8f5c2, #2f7a6f 70%);
+}
+
+/* Keyframe: the bubble arcs through the air */
+@keyframes flyArcX {
+  from { transform: translateX(0); }
+  to   { transform: translateX(var(--fly-dx)); }
+}
+@keyframes flyArcY {
+  0%   { transform: translateY(0)    scale(1); }
+  30%  { transform: translateY(var(--fly-peak)) scale(0.9); }
+  100% { transform: translateY(var(--fly-dy))   scale(0.28); }
+}
+@keyframes flyFadeOut {
+  0%   { opacity: 1; }
+  65%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Particle burst */
+.shopsphere-particle {
+  position: fixed;
+  z-index: 9998;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: var(--p-color, #2f7a6f);
+  animation: particleBurst var(--p-dur, 600ms) var(--p-ease, cubic-bezier(0.22, 1, 0.36, 1)) forwards;
+}
+
+@keyframes particleBurst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--p-tx), var(--p-ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Cart-icon wiggle on landing */
+.shopsphere-cart-wiggle {
+  animation: cartWiggle 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes cartWiggle {
+  0%   { transform: scale(1)    rotate(0deg); }
+  15%  { transform: scale(1.25) rotate(-10deg); }
+  30%  { transform: scale(1.2)  rotate(8deg); }
+  45%  { transform: scale(1.12) rotate(-6deg); }
+  60%  { transform: scale(1.06) rotate(4deg); }
+  75%  { transform: scale(1.02) rotate(-2deg); }
+  100% { transform: scale(1)    rotate(0deg); }
+}
+
+/* Success ripple on the card */
+.shopsphere-card-success-ripple::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(34, 197, 94, 0.7);
+  animation: cardSuccessRipple 700ms ease-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes cardSuccessRipple {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+@keyframes traceMove {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.product-card .p-card-body {
+  padding: 0 !important;
+}
+
+.product-card .p-card-content {
+  padding: 0 !important;
+}
+
+.product-card .product-card-content {
+  padding: 0.75rem 0.75rem 0.75rem;
+}
+
+.trace-card {
+  --trace-radius: 10px;
+  /* --trace-gap: 3px; space between animated line and content */
+  position: relative;
+  border-radius: var(--trace-radius);
+  overflow: hidden;
+}
+
+.trace-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* make sure this class is on Card: className="trace-card-inner product-card ..." */
+.product-card .p-card-body,
+.product-card .p-card-content {
+  padding: 0 !important;
+}
+
+/* remove any old shifting */
+.product-image-wrap,
+.trace-svg {
+  transform: none !important;
+}
+
+.product-image-wrap {
+  margin: var(--trace-gap) var(--trace-gap) 0 var(--trace-gap);
+  border-radius: calc(var(--trace-radius) - var(--trace-gap));
+  overflow: hidden;
+  width: calc(100% - (var(--trace-gap) * 2));
+}
+
+.product-image-el {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+}
+
+.trace-card {
+  --trace-radius: 16px;
+  --trace-gap: 1.5px;
+  --inner-top-radius: calc(var(--trace-radius) - var(--trace-gap));
+  position: relative;
+  border-radius: var(--trace-radius);
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* image top radius */
+.product-image-wrap {
+  margin: var(--trace-gap) var(--trace-gap) 0 var(--trace-gap);
+  border-radius: var(--inner-top-radius) var(--inner-top-radius) 0 0;
+  overflow: hidden;
 }

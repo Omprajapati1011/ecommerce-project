@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
@@ -18,47 +18,130 @@ import { ScrollPanel } from "primereact/scrollpanel";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../redux/slices/authSlice";
 import { useTheme } from "../../context/ThemeContext";
+import api from "../../../api/api";
+import { getAllCategories } from "../../services/categoryApi";
 
-const menuSections = [
-  {
-    title: "Trending",
-    items: [
-      { label: "Bestsellers", href: "/products" },
-      { label: "New Releases", href: "/products" },
-      { label: "Top Deals", href: "/products" },
-    ],
-  },
-  {
-    title: "Support",
-    items: [
-      { label: "Customer Service", href: "/products" },
-      { label: "Returns & Orders", href: "/dashboard" },
-    ],
-  },
-];
-
-const topNavLinks = [
-  { label: "Categories", href: "/products" },
-  { label: "Today's Deals", href: "/products" },
-  { label: "New Releases", href: "/products" },
-  { label: "Electronics", href: "/products" },
-  { label: "Fashion", href: "/products" },
-  { label: "Customer Service", href: "/products" },
-];
+const extractCategoryTree = (response) => {
+  const data = response?.data;
+  if (Array.isArray(data?.data?.items)) return data.data.items;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+};
 
 function Navbar() {
   const { darkMode, toggleDarkMode } = useTheme();
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
-  const itemCount = 0;
+  const [itemCount, setItemCount] = useState(0);
   const dashboardPath =
     currentUser?.role === "admin" ? "/admin/dashboard" : "/dashboard";
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [categoryTree, setCategoryTree] = useState([]);
 
-  const parentCategories = useMemo(() => [], []);
-  const childMap = useMemo(() => new Map(), []);
+  const fetchCartCount = useCallback(async () => {
+    if (!currentUser) {
+      setItemCount(0);
+      return;
+    }
+    try {
+      const res = await api.get("/cart");
+      const items = res.data?.data?.items || [];
+      const total = items.reduce(
+        (sum, item) => sum + (Number(item.quantity) || 0),
+        0,
+      );
+      setItemCount(total);
+    } catch {
+      setItemCount(0);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    fetchCartCount();
+    window.addEventListener("cart:updated", fetchCartCount);
+    return () => window.removeEventListener("cart:updated", fetchCartCount);
+  }, [fetchCartCount]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadCategories = async () => {
+      try {
+        const response = await getAllCategories();
+        if (!active) return;
+        setCategoryTree(extractCategoryTree(response));
+      } catch {
+        if (!active) return;
+        setCategoryTree([]);
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const parentCategories = useMemo(() => categoryTree, [categoryTree]);
+  const childMap = useMemo(() => {
+    const map = new Map();
+    categoryTree.forEach((category) => {
+      map.set(category.category_id, category.children || []);
+    });
+    return map;
+  }, [categoryTree]);
+
+  const topNavLinks = useMemo(
+    () => [
+      { label: "Shop", href: "/shop" },
+      {
+        label: "Today's Deals",
+        href: "/shop?sortField=price&sortOrder=asc",
+      },
+      { label: "New Releases", href: "/#new-releases" },
+      { label: "Electronics", href: "/shop?search=electronics" },
+      { label: "Fashion", href: "/shop?search=fashion" },
+      {
+        label: "Customer Service",
+        href: currentUser ? `${dashboardPath}?tab=support` : "/login",
+      },
+    ],
+    [currentUser, dashboardPath],
+  );
+
+  const menuSections = useMemo(
+    () => [
+      {
+        title: "Trending",
+        items: [
+          { label: "Bestsellers", href: "/#bestsellers" },
+          { label: "New Releases", href: "/#new-releases" },
+          {
+            label: "Top Deals",
+            href: "/shop?sortField=price&sortOrder=asc",
+          },
+        ],
+      },
+      {
+        title: "Support",
+        items: [
+          {
+            label: "Customer Service",
+            href: currentUser ? `${dashboardPath}?tab=support` : "/login",
+          },
+          {
+            label: "Returns & Orders",
+            href: currentUser ? "/orders" : "/login",
+          },
+        ],
+      },
+    ],
+    [currentUser, dashboardPath],
+  );
 
   const [expandedCategories, setExpandedCategories] = useState({});
 
@@ -81,11 +164,33 @@ function Navbar() {
     }));
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setMenuOpen(false);
-    await dispatch(logoutUser());
+    dispatch(logoutUser());
     navigate("/");
   };
+
+  const handleSearchSubmit = useCallback(
+    (event) => {
+      event.preventDefault();
+      const query = searchText.trim();
+      navigate(
+        query
+          ? `/shop?search=${encodeURIComponent(query)}`
+          : "/shop",
+      );
+      setMenuOpen(false);
+    },
+    [navigate, searchText],
+  );
+
+  const handleCategoryNavigate = useCallback(
+    (categoryId) => {
+      navigate(`/shop?category=${categoryId}`);
+      setMenuOpen(false);
+    },
+    [navigate],
+  );
 
   return (
     <>
@@ -118,7 +223,8 @@ function Navbar() {
             <span>ShopSphere</span>
           </Link>
 
-          <div
+          <form
+            onSubmit={handleSearchSubmit}
             className={`hidden flex-1 items-center rounded-lg border px-3 py-2 md:flex ${darkMode ? "border-[#1f2933] bg-[#151e22]" : "border-amber-200/80 bg-[#fff8ee]"}`}
           >
             <Search
@@ -126,9 +232,11 @@ function Navbar() {
             />
             <InputText
               placeholder="Search"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
               className={`ml-2 w-full border-0 bg-transparent p-0 text-sm shadow-none focus:shadow-none ${darkMode ? "text-slate-100 placeholder:text-slate-400" : "text-gray-900 placeholder:text-gray-500"}`}
             />
-          </div>
+          </form>
 
           <nav className="ml-auto flex items-center gap-3 font-accent text-sm font-medium md:gap-4">
             <Button
@@ -141,19 +249,24 @@ function Navbar() {
               }`}
               aria-label="Toggle dark mode"
             >
-              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {darkMode ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
             </Button>
 
             <Link
-              to="/"
+              to="/shop"
               className={`hidden transition md:inline-flex ${darkMode ? "text-slate-200 hover:text-amber-300" : "text-gray-700 hover:text-amber-600"}`}
             >
               Shop
             </Link>
             <Link
-              to="/"
+              to="/cart"
               className={`relative transition ${darkMode ? "text-slate-200 hover:text-amber-300" : "text-gray-700 hover:text-amber-600"}`}
               aria-label="Cart"
+              id="shopsphere-cart-link"
             >
               <ShoppingCart className="h-5 w-5" />
               {itemCount > 0 && (
@@ -191,7 +304,9 @@ function Navbar() {
 
         <div
           className={`hidden border-t md:block ${
-            darkMode ? "border-[#1f2933] bg-[#1a2327]" : "border-amber-200/70 bg-[#f5ecde]"
+            darkMode
+              ? "border-[#1f2933] bg-[#1a2327]"
+              : "border-amber-200/70 bg-[#f5ecde]"
           }`}
         >
           <nav className="relative mx-auto flex w-full max-w-[1600px] items-center gap-2 overflow-hidden px-4 py-1.5 md:px-8 lg:px-12">
@@ -224,7 +339,8 @@ function Navbar() {
         <div
           className={`border-t px-4 py-3 md:hidden ${darkMode ? "border-[#1f2933]" : "border-amber-200/70"}`}
         >
-          <div
+          <form
+            onSubmit={handleSearchSubmit}
             className={`flex items-center rounded-lg border px-3 py-2 ${darkMode ? "border-[#1f2933] bg-[#151e22]" : "border-amber-200/80 bg-[#fff8ee]"}`}
           >
             <Search
@@ -232,9 +348,11 @@ function Navbar() {
             />
             <InputText
               placeholder="Search"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
               className={`ml-2 w-full border-0 bg-transparent p-0 text-sm shadow-none focus:shadow-none ${darkMode ? "text-slate-100 placeholder:text-slate-400" : "text-gray-900 placeholder:text-gray-500"}`}
             />
-          </div>
+          </form>
         </div>
       </header>
 
@@ -245,7 +363,9 @@ function Navbar() {
         showCloseIcon={false}
         blockScroll
         className={`shopsphere-sidebar ${darkMode ? "bg-[#151e22] text-slate-100" : "bg-[#fff8ee] text-gray-900"} !w-[86vw] !max-w-[380px]`}
-        contentClassName="flex h-full flex-col p-0"
+        pt={{
+          content: { className: "flex h-full flex-col p-0" },
+        }}
       >
         <div className="relative overflow-hidden bg-gradient-to-r from-[#0f2927] to-[#163b36] px-4 py-4 text-white">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(201,184,138,0.08),transparent_60%)]" />
@@ -298,7 +418,11 @@ function Navbar() {
                     >
                       <Button
                         type="button"
-                        onClick={() => toggleCategory(parent.category_id)}
+                        onClick={() =>
+                          hasChildren
+                            ? toggleCategory(parent.category_id)
+                            : handleCategoryNavigate(parent.category_id)
+                        }
                         className={`!flex !w-full !items-center !justify-between !rounded-xl !bg-transparent !px-3 !py-2.5 !text-left !text-sm !font-medium !shadow-none ${darkMode ? "!text-slate-200 hover:!bg-[#1a2327] hover:!text-amber-300" : "!text-gray-700 hover:!bg-amber-50 hover:!text-amber-700"}`}
                       >
                         <span>{parent.category_name}</span>
@@ -310,6 +434,30 @@ function Navbar() {
                           <ChevronRight className="h-4 w-4" />
                         )}
                       </Button>
+
+                      {hasChildren && open ? (
+                        <div className="px-2 pb-2">
+                          {(childMap.get(parent.category_id) || []).map(
+                            (child) => (
+                              <button
+                                key={child.category_id}
+                                type="button"
+                                onClick={() =>
+                                  handleCategoryNavigate(child.category_id)
+                                }
+                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                                  darkMode
+                                    ? "text-slate-300 hover:bg-[#1a2327] hover:text-amber-300"
+                                    : "text-gray-600 hover:bg-amber-50 hover:text-amber-700"
+                                }`}
+                              >
+                                <span>{child.category_name}</span>
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            ),
+                          )}
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -331,7 +479,9 @@ function Navbar() {
                     {section.items.map((item) => (
                       <Link
                         key={item.label}
-                        to={item.href === "/dashboard" ? dashboardPath : item.href}
+                        to={
+                          item.href === "/dashboard" ? dashboardPath : item.href
+                        }
                         onClick={() => setMenuOpen(false)}
                         className={`flex items-center justify-between rounded-lg px-2 py-2.5 text-sm font-medium transition ${darkMode ? "text-slate-200 hover:bg-[#1a2327] hover:text-amber-300" : "text-gray-700 hover:bg-amber-50/80 hover:text-amber-700"}`}
                       >

@@ -1,0 +1,1160 @@
+/**
+ * AdminShared.css
+ * Shared admin theme overrides for PrimeReact components.
+ *
+ * This single stylesheet themes every admin tab (Products, Portions,
+ * Modifiers, Orders) to match the ShopSphere beige/teal/gold palette.
+ *
+ * Sections:
+ *  1. Dashboard grid layout (full-height, independent column scroll)
+ *  2. DataTable — transparent rows, sticky header, custom paginator
+ *  3. Buttons — primary (teal/gold), secondary, action (edit/delete)
+ *  4. Search input + filter dropdown + date filter
+ *  5. Form inputs — InputText, InputNumber, Dropdown, InputSwitch
+ *  6. Dialog — overlay, header, content, footer, TabView
+ *  7. Status switch — teal (light) / gold (dark)
+ *  8. Native <select> variants — blue (portions), purple (modifiers)
+ *  9. Product images — dropzone, preview, overlay, modifier cards
+ * 10. Order detail modal — section dividers, date filter
+ * 11. Skeleton shimmer animation
+ * 12. Custom scrollbars (Webkit + Firefox)
+ * 13. Responsive breakpoints
+ *
+ * Imported by: AdminProductsTab, AdminPortionsTab, AdminModifiersTab,
+ *              AdminOrdersTab (via their respective .jsx files)
+ */
+
+/* Admin Products Dashboard - Custom Styles */
+/* Enforces transparent/beige theme and premium aesthetics */
+
+/* ===== Dashboard Grid: full-screen, both columns scroll independently ===== */
+.admin-dashboard-grid {
+  height: 100%;
+  grid-template-rows: 1fr;
+  transition: grid-template-columns 300ms ease-in-out;
+}
+
+/* Both grid children must allow shrinking below their content size */
+.admin-dashboard-grid > * {
+  min-height: 0;
+}
+
+/* ===== Container Styles ===== */
+.admin-products-container {
+  width: 100%;
+}
+
+.admin-products-card {
+  background: transparent;
+  padding: 0;
+}
+
+/* ===== Layout: card matches sidebar, scrollable table, paginator pinned ===== */
+.admin-products-table.p-datatable {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-products-table .p-datatable-wrapper {
+  overflow-y: auto !important;
+}
+
+.admin-products-table .p-paginator-bottom {
+  flex-shrink: 0;
+}
+
+/* ===== DataTable Override Styles ===== */
+/* CRITICAL: Force transparent backgrounds throughout the table */
+.admin-products-table.p-datatable {
+  background: transparent !important;
+}
+
+.admin-products-table .p-datatable-wrapper {
+  background: transparent !important;
+}
+
+.admin-products-table .p-datatable-table {
+  background: transparent !important;
+}
+
+/* Header row styling — solid bg needed for sticky header over scrolling rows */
+.admin-products-table .p-datatable-thead > tr {
+  background: #f5f0e8 !important;
+}
+
+.admin-products-table .p-datatable-thead > tr > th {
+  background: transparent !important;
+  border: none !important;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 1rem 1rem;
+}
+
+.dark .admin-products-table .p-datatable-thead > tr {
+  background: #1a2528 !important;
+}
+
+.dark .admin-products-table .p-datatable-thead > tr > th {
+  color: #d1d5db;
+}
+
+/* Body rows - FORCE transparent */
+.admin-products-table .p-datatable-tbody > tr {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(201, 184, 138, 0.15);
+  transition: background-color 0.2s ease;
+}
+
+.admin-products-table .p-datatable-tbody > tr:hover {
+  background: rgba(201, 184, 138, 0.08) !important;
+}
+
+.dark .admin-products-table .p-datatable-tbody > tr {
+  border-bottom: 1px solid rgba(201, 184, 138, 0.1);
+}
+
+.dark .admin-products-table .p-datatable-tbody > tr:hover {
+  background: rgba(201, 184, 138, 0.05) !important;
+}
+
+/* Body cells */
+.admin-products-table .p-datatable-tbody > tr > td {
+  background: transparent !important;
+  border: none !important;
+  padding: 1rem 1rem;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.dark .admin-products-table .p-datatable-tbody > tr > td {
+  color: #e5e7eb;
+}
+
+/* Sorted column - FORCE transparent */
+.admin-products-table .p-sortable-column.p-highlight {
+  background: transparent !important;
+}
+
+.admin-products-table .p-sortable-column.p-highlight .p-sortable-column-icon {
+  color: #2a6857;
+}
+
+.dark
+  .admin-products-table
+  .p-sortable-column.p-highlight
+  .p-sortable-column-icon {
+  color: #c9b88a;
+}
+
+/* Sort icon */
+.admin-products-table .p-sortable-column .p-sortable-column-icon {
+  color: #9ca3af;
+  margin-left: 0.5rem;
+}
+
+/* Hover state for sortable columns */
+.admin-products-table .p-sortable-column:not(.p-highlight):hover {
+  background: rgba(201, 184, 138, 0.1) !important;
+}
+
+/* ===== Paginator Styles ===== */
+.admin-products-table .p-paginator {
+  background: transparent !important;
+  border: none !important;
+  padding: 0.5rem 0;
+  justify-content: center;
+}
+
+.admin-products-table .p-paginator .p-paginator-pages .p-paginator-page {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin: 0 0.125rem;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.admin-products-table
+  .p-paginator
+  .p-paginator-pages
+  .p-paginator-page:hover:not(.p-highlight) {
+  background: rgba(42, 104, 87, 0.1);
+  color: #2a6857;
+}
+
+.dark
+  .admin-products-table
+  .p-paginator
+  .p-paginator-pages
+  .p-paginator-page:hover:not(.p-highlight) {
+  background: rgba(201, 184, 138, 0.1);
+  color: #c9b88a;
+}
+
+.admin-products-table
+  .p-paginator
+  .p-paginator-pages
+  .p-paginator-page.p-highlight {
+  background: #2a6857 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(42, 104, 87, 0.3);
+}
+
+.dark
+  .admin-products-table
+  .p-paginator
+  .p-paginator-pages
+  .p-paginator-page.p-highlight {
+  background: #c9b88a !important;
+  color: #163332 !important;
+  box-shadow: 0 4px 12px rgba(201, 184, 138, 0.3);
+}
+
+.admin-products-table .p-paginator .p-paginator-first,
+.admin-products-table .p-paginator .p-paginator-prev,
+.admin-products-table .p-paginator .p-paginator-next,
+.admin-products-table .p-paginator .p-paginator-last {
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-radius: 0.75rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+}
+
+.admin-products-table .p-paginator .p-paginator-first:hover,
+.admin-products-table .p-paginator .p-paginator-prev:hover,
+.admin-products-table .p-paginator .p-paginator-next:hover,
+.admin-products-table .p-paginator .p-paginator-last:hover {
+  background: rgba(42, 104, 87, 0.1);
+  color: #2a6857;
+}
+
+/* Rows per page dropdown */
+.admin-products-table .p-paginator .p-dropdown {
+  border: 1px solid rgba(201, 184, 138, 0.3);
+  border-radius: 0.75rem;
+  background: transparent;
+  margin-left: 1rem;
+}
+
+.dark .admin-products-table .p-paginator .p-dropdown {
+  border-color: rgba(201, 184, 138, 0.2);
+}
+
+/* ===== Primary Button Styles ===== */
+.admin-btn-primary {
+  background-color: #2a6857 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.admin-btn-primary:hover {
+  background-color: #1f4e41 !important;
+}
+
+.dark .admin-btn-primary {
+  background-color: #c9b88a !important;
+  color: #163332 !important;
+}
+
+.dark .admin-btn-primary:hover {
+  background-color: #b5a577 !important;
+}
+
+/* ===== Secondary Button Styles ===== */
+.admin-btn-secondary {
+  color: #6b7280 !important;
+  background: transparent !important;
+}
+
+.admin-btn-secondary:hover {
+  background: rgba(107, 114, 128, 0.1) !important;
+  color: #374151 !important;
+}
+
+.dark .admin-btn-secondary {
+  color: #9ca3af !important;
+}
+
+.dark .admin-btn-secondary:hover {
+  background: rgba(156, 163, 175, 0.1) !important;
+  color: #e5e7eb !important;
+}
+
+/* ===== Search Input Styles ===== */
+.admin-search-input {
+  background-color: rgba(201, 184, 138, 0.05) !important;
+  border-color: rgba(201, 184, 138, 0.2) !important;
+}
+
+.admin-search-input:hover {
+  background-color: rgba(201, 184, 138, 0.08) !important;
+}
+
+.admin-search-input:focus {
+  background-color: rgba(201, 184, 138, 0.1) !important;
+  border-color: #2a6857 !important;
+  box-shadow: 0 0 0 2px rgba(42, 104, 87, 0.15) !important;
+}
+
+.dark .admin-search-input {
+  background-color: rgba(201, 184, 138, 0.03) !important;
+  border-color: rgba(201, 184, 138, 0.15) !important;
+  color: #e5e7eb;
+}
+
+.dark .admin-search-input:focus {
+  border-color: #c9b88a !important;
+  box-shadow: 0 0 0 2px rgba(201, 184, 138, 0.15) !important;
+}
+
+/* ===== Filter Dropdown Styles ===== */
+.admin-filter-dropdown .admin-dropdown-root {
+  background-color: rgba(201, 184, 138, 0.05) !important;
+  border-color: rgba(201, 184, 138, 0.2) !important;
+}
+
+.dark .admin-filter-dropdown .admin-dropdown-root {
+  background-color: rgba(201, 184, 138, 0.03) !important;
+  border-color: rgba(201, 184, 138, 0.15) !important;
+}
+
+/* ===== Action Button Styles ===== */
+.admin-action-btn {
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.admin-action-btn.p-button-text.p-button-info {
+  color: #3b82f6 !important;
+}
+
+.admin-action-btn.p-button-text.p-button-info:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.admin-action-btn.p-button-text.p-button-danger {
+  color: #ef4444 !important;
+}
+
+.admin-action-btn.p-button-text.p-button-danger:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* ===== Status Switch Styles ===== */
+/* Light mode - unchecked */
+.admin-status-switch.p-inputswitch .p-inputswitch-slider {
+  background: #d1d5db !important;
+}
+
+/* Light mode - checked (dark teal) */
+.admin-status-switch.p-inputswitch.p-highlight .p-inputswitch-slider {
+  background: #2a6857 !important;
+}
+
+.admin-status-switch.p-inputswitch:not(.p-disabled):has(
+    .p-inputswitch-input:hover
+  ).p-highlight
+  .p-inputswitch-slider {
+  background: #1f4e41 !important;
+}
+
+/* Dark mode - unchecked */
+.dark .admin-status-switch.p-inputswitch .p-inputswitch-slider {
+  background: #4b5563 !important;
+}
+
+/* Dark mode - checked (gold) */
+.dark .admin-status-switch.p-inputswitch.p-highlight .p-inputswitch-slider {
+  background: #c9b88a !important;
+}
+
+.dark
+  .admin-status-switch.p-inputswitch:not(.p-disabled):has(
+    .p-inputswitch-input:hover
+  ).p-highlight
+  .p-inputswitch-slider {
+  background: #b5a577 !important;
+}
+
+/* ===== Dialog Styles ===== */
+
+/* Overlay mask */
+.p-dialog-mask.p-component-overlay {
+  background: rgba(22, 51, 50, 0.4) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* Dialog container */
+.admin-dialog {
+  background-color: #faf8f4 !important;
+  border: 1px solid rgba(201, 184, 138, 0.2) !important;
+  box-shadow:
+    0 25px 60px rgba(22, 51, 50, 0.2),
+    0 0 0 1px rgba(201, 184, 138, 0.1) !important;
+}
+
+.dark .admin-dialog {
+  background-color: #1a2327 !important;
+  border-color: rgba(201, 184, 138, 0.12) !important;
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(201, 184, 138, 0.08) !important;
+}
+
+/* Header */
+.admin-dialog-header {
+  background: rgba(201, 184, 138, 0.1) !important;
+  border-color: rgba(201, 184, 138, 0.2) !important;
+  color: #163332 !important;
+}
+
+.dark .admin-dialog-header {
+  background: rgba(201, 184, 138, 0.06) !important;
+  border-color: rgba(201, 184, 138, 0.1) !important;
+  color: #f3f4f6 !important;
+}
+
+/* Header title */
+.admin-dialog .p-dialog-title {
+  color: #163332 !important;
+}
+
+.dark .admin-dialog .p-dialog-title {
+  color: #e5e7eb !important;
+}
+
+/* Close button */
+.admin-dialog .p-dialog-header-icon {
+  color: #6b7280 !important;
+  border-radius: 0.5rem !important;
+  width: 2rem !important;
+  height: 2rem !important;
+}
+
+.admin-dialog .p-dialog-header-icon:hover {
+  background: rgba(201, 184, 138, 0.15) !important;
+  color: #163332 !important;
+}
+
+.dark .admin-dialog .p-dialog-header-icon:hover {
+  background: rgba(201, 184, 138, 0.1) !important;
+  color: #c9b88a !important;
+}
+
+/* Content area */
+.admin-dialog .p-dialog-content {
+  background: transparent !important;
+  color: #374151 !important;
+}
+
+.dark .admin-dialog .p-dialog-content {
+  color: #e5e7eb !important;
+}
+
+/* Footer */
+.admin-dialog-footer {
+  background: rgba(201, 184, 138, 0.08) !important;
+  border-color: rgba(201, 184, 138, 0.2) !important;
+}
+
+.dark .admin-dialog-footer {
+  background: rgba(201, 184, 138, 0.04) !important;
+  border-color: rgba(201, 184, 138, 0.1) !important;
+}
+
+/* ===== Form Input Styles ===== */
+.admin-input {
+  background-color: rgba(201, 184, 138, 0.05) !important;
+  border: 1px solid rgba(201, 184, 138, 0.2) !important;
+  color: #1f2937 !important;
+  padding: 0.5rem 0.75rem !important;
+  height: 2.5rem !important;
+  font-size: 0.875rem !important;
+  border-radius: 0.5rem !important;
+}
+
+.admin-input:focus {
+  border-color: #2a6857 !important;
+  box-shadow: 0 0 0 2px rgba(42, 104, 87, 0.1) !important;
+}
+
+.dark .admin-input {
+  background-color: rgba(201, 184, 138, 0.03) !important;
+  border-color: rgba(201, 184, 138, 0.15) !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .admin-input:focus {
+  border-color: #c9b88a !important;
+  box-shadow: 0 0 0 2px rgba(201, 184, 138, 0.1) !important;
+}
+
+/* ===== Dropdown Styles ===== */
+.admin-dropdown-root {
+  background-color: rgba(201, 184, 138, 0.05) !important;
+  border: 1px solid rgba(201, 184, 138, 0.2) !important;
+  height: 2.5rem !important;
+  border-radius: 0.5rem !important;
+}
+
+.dark .admin-dropdown-root {
+  background-color: rgba(201, 184, 138, 0.03) !important;
+  border-color: rgba(201, 184, 138, 0.15) !important;
+}
+
+.admin-dropdown-panel {
+  background-color: #ffffff !important;
+  border: 1px solid rgba(201, 184, 138, 0.2) !important;
+}
+
+.dark .admin-dropdown-panel {
+  background-color: #1a2327 !important;
+  border-color: rgba(201, 184, 138, 0.15) !important;
+}
+
+.admin-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  color: #374151;
+  padding: 0.75rem 1rem;
+}
+
+.dark .admin-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  color: #e5e7eb;
+}
+
+.admin-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
+  background: rgba(42, 104, 87, 0.1) !important;
+}
+
+.dark .admin-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
+  background: rgba(201, 184, 138, 0.1) !important;
+}
+
+.admin-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight {
+  background: rgba(42, 104, 87, 0.15) !important;
+  color: #2a6857 !important;
+}
+
+.dark .admin-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight {
+  background: rgba(201, 184, 138, 0.15) !important;
+  color: #c9b88a !important;
+}
+
+/* ===== InputNumber (Price fields) ===== */
+.admin-inputnumber-wrap.p-inputnumber {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+}
+
+.admin-inputnumber-wrap .p-inputtext {
+  background-color: rgba(201, 184, 138, 0.05) !important;
+  border: 1px solid rgba(201, 184, 138, 0.2) !important;
+  color: #1f2937 !important;
+  border-radius: 0.5rem !important;
+  height: 2.5rem !important;
+  font-size: 0.875rem !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.admin-inputnumber-wrap .p-inputtext:focus {
+  border-color: #2a6857 !important;
+  box-shadow: 0 0 0 2px rgba(42, 104, 87, 0.1) !important;
+}
+
+.dark .admin-inputnumber-wrap .p-inputtext {
+  background-color: rgba(201, 184, 138, 0.03) !important;
+  border-color: rgba(201, 184, 138, 0.15) !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .admin-inputnumber-wrap .p-inputtext:focus {
+  border-color: #c9b88a !important;
+  box-shadow: 0 0 0 2px rgba(201, 184, 138, 0.1) !important;
+}
+
+/* ===== InputNumber Buttons inside Dialog ===== */
+.admin-dialog .p-inputnumber-button {
+  background: rgba(42, 104, 87, 0.1) !important;
+  border: 1px solid rgba(201, 184, 138, 0.2) !important;
+  color: #2a6857 !important;
+}
+
+.admin-dialog .p-inputnumber-button:hover {
+  background: rgba(42, 104, 87, 0.2) !important;
+}
+
+.dark .admin-dialog .p-inputnumber-button {
+  background: rgba(201, 184, 138, 0.08) !important;
+  border-color: rgba(201, 184, 138, 0.15) !important;
+  color: #c9b88a !important;
+}
+
+.dark .admin-dialog .p-inputnumber-button:hover {
+  background: rgba(201, 184, 138, 0.15) !important;
+}
+
+/* ===== Dropdown inside Dialog ===== */
+.admin-dialog .admin-dropdown-root {
+  border: 1px solid rgba(201, 184, 138, 0.2) !important;
+  color: #374151 !important;
+}
+
+.dark .admin-dialog .admin-dropdown-root {
+  color: #e5e7eb !important;
+}
+
+.admin-dialog .p-dropdown-label {
+  color: #374151 !important;
+}
+
+.dark .admin-dialog .p-dropdown-label {
+  color: #e5e7eb !important;
+}
+
+.admin-dialog .p-dropdown-label.p-placeholder {
+  color: #9ca3af !important;
+}
+
+/* ===== Labels inside Dialog ===== */
+.admin-dialog label {
+  color: #374151 !important;
+}
+
+.dark .admin-dialog label {
+  color: #d1d5db !important;
+}
+
+/* ===== Empty Message ===== */
+.admin-products-table .p-datatable-emptymessage td {
+  background: transparent !important;
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  font-size: 0.9375rem;
+}
+
+.dark .admin-products-table .p-datatable-emptymessage td {
+  color: #9ca3af;
+}
+
+/* ===== Animation ===== */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
+  .admin-products-table .p-skeleton {
+    animation: none;
+  }
+}
+
+/* ===== Skeleton Loading ===== */
+.admin-products-table .p-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(201, 184, 138, 0.1) 25%,
+    rgba(201, 184, 138, 0.2) 50%,
+    rgba(201, 184, 138, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+/* ===== Custom Scrollbar — DataTable ===== */
+
+/* Webkit — DataTable body */
+.admin-products-table .p-datatable-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.admin-products-table .p-datatable-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-products-table .p-datatable-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(201, 184, 138, 0.3);
+  border-radius: 3px;
+}
+.admin-products-table .p-datatable-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 184, 138, 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark .admin-products-table .p-datatable-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(201, 184, 138, 0.15);
+}
+.dark
+  .admin-products-table
+  .p-datatable-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 184, 138, 0.3);
+}
+
+/* Firefox */
+.admin-products-table .p-datatable-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 184, 138, 0.3) transparent;
+}
+.dark .admin-products-table .p-datatable-wrapper {
+  scrollbar-color: rgba(201, 184, 138, 0.15) transparent;
+}
+
+/* ===== Offer View Dialog Scrollbar (matches DataTable) ===== */
+.admin-dialog .admin-offer-view-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.admin-dialog .admin-offer-view-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-dialog .admin-offer-view-scroll::-webkit-scrollbar-thumb {
+  background: rgba(201, 184, 138, 0.3);
+  border-radius: 3px;
+}
+.admin-dialog .admin-offer-view-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 184, 138, 0.5);
+}
+.dark .admin-dialog .admin-offer-view-scroll::-webkit-scrollbar-thumb {
+  background: rgba(201, 184, 138, 0.15);
+}
+.dark .admin-dialog .admin-offer-view-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 184, 138, 0.3);
+}
+.admin-dialog .admin-offer-view-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 184, 138, 0.3) transparent;
+}
+.dark .admin-dialog .admin-offer-view-scroll {
+  scrollbar-color: rgba(201, 184, 138, 0.15) transparent;
+}
+
+/* ===== DataTable scrollable mode fixes ===== */
+
+/* Frozen header in scrollable mode */
+.admin-products-table .p-datatable-thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.admin-products-table .p-datatable-thead > tr > th {
+  background: #faf8f4 !important;
+}
+.dark .admin-products-table .p-datatable-thead > tr > th {
+  background: #151e22 !important;
+}
+
+/* Remove extra borders PrimeReact adds in scrollable mode */
+.admin-products-table.p-datatable-scrollable .p-datatable-thead > tr > th,
+.admin-products-table.p-datatable-scrollable .p-datatable-tbody > tr > td {
+  border: none !important;
+}
+
+/* Paginator nav arrows — dark mode */
+.dark .admin-products-table .p-paginator .p-paginator-first,
+.dark .admin-products-table .p-paginator .p-paginator-prev,
+.dark .admin-products-table .p-paginator .p-paginator-next,
+.dark .admin-products-table .p-paginator .p-paginator-last {
+  color: #9ca3af;
+}
+.dark .admin-products-table .p-paginator .p-paginator-first:hover,
+.dark .admin-products-table .p-paginator .p-paginator-prev:hover,
+.dark .admin-products-table .p-paginator .p-paginator-next:hover,
+.dark .admin-products-table .p-paginator .p-paginator-last:hover {
+  background: rgba(201, 184, 138, 0.1);
+  color: #c9b88a;
+}
+
+/* Paginator page numbers — dark mode base */
+.dark .admin-products-table .p-paginator .p-paginator-pages .p-paginator-page {
+  color: #9ca3af;
+}
+
+/* Rows-per-page dropdown text */
+.admin-products-table .p-paginator .p-dropdown .p-dropdown-label {
+  color: #374151;
+}
+.dark .admin-products-table .p-paginator .p-dropdown .p-dropdown-label {
+  color: #e5e7eb;
+}
+.admin-products-table .p-paginator .p-dropdown .p-dropdown-trigger {
+  color: #6b7280;
+}
+.dark .admin-products-table .p-paginator .p-dropdown .p-dropdown-trigger {
+  color: #9ca3af;
+}
+
+/* ===== TabView inside Admin Dialog ===== */
+.admin-dialog .p-tabview {
+  background: transparent !important;
+}
+
+.admin-dialog .p-tabview-nav {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(201, 184, 138, 0.2) !important;
+  padding: 0 1.5rem !important;
+  gap: 0;
+}
+
+.admin-dialog .p-tabview-nav li {
+  margin: 0 !important;
+}
+
+.admin-dialog .p-tabview-nav li .p-tabview-nav-link {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  color: #6b7280 !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  padding: 0.875rem 1.25rem !important;
+  margin-bottom: -1px;
+  transition: all 0.2s ease;
+}
+
+.admin-dialog .p-tabview-nav li .p-tabview-nav-link:hover {
+  color: #2a6857 !important;
+}
+
+.admin-dialog .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  color: #2a6857 !important;
+  font-weight: 600 !important;
+  border-bottom-color: #2a6857 !important;
+}
+
+.dark .admin-dialog .p-tabview-nav {
+  border-bottom-color: rgba(201, 184, 138, 0.12) !important;
+}
+
+.dark .admin-dialog .p-tabview-nav li .p-tabview-nav-link {
+  color: #9ca3af !important;
+}
+
+.dark .admin-dialog .p-tabview-nav li .p-tabview-nav-link:hover {
+  color: #c9b88a !important;
+}
+
+.dark .admin-dialog .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  color: #c9b88a !important;
+  border-bottom-color: #c9b88a !important;
+}
+
+.admin-dialog .p-tabview-panels {
+  background: transparent !important;
+  padding: 1.5rem !important;
+}
+
+/* TabView ink bar — hide default */
+.admin-dialog .p-tabview-ink-bar {
+  display: none !important;
+}
+
+/* ===== Inline editable DataTable inside Dialog — smaller rows ===== */
+.admin-dialog .admin-products-table .p-datatable-wrapper {
+  max-height: none;
+  flex: none;
+}
+
+.admin-dialog .admin-products-table .p-datatable-table {
+  height: auto;
+}
+
+/* Success action button */
+.admin-action-btn.p-button-text.p-button-success {
+  color: #22c55e !important;
+}
+
+.admin-action-btn.p-button-text.p-button-success:hover {
+  background: rgba(34, 197, 94, 0.1) !important;
+}
+
+/* Secondary action button (cancel) */
+.admin-action-btn.p-button-text.p-button-secondary {
+  color: #6b7280 !important;
+}
+
+.admin-action-btn.p-button-text.p-button-secondary:hover {
+  background: rgba(107, 114, 128, 0.1) !important;
+}
+
+/* ===== PrimeReact Dropdown inside DataTable cells ===== */
+.admin-table-dropdown {
+  max-width: 10.5rem;
+}
+
+.admin-table-dropdown-root {
+  min-height: 2.125rem !important;
+  height: 2.125rem !important;
+  border-radius: 0.5rem !important;
+}
+
+.admin-table-dropdown .p-dropdown-label {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+}
+
+.admin-table-dropdown .p-dropdown-trigger {
+  width: 2rem !important;
+}
+
+.admin-table-dropdown .p-dropdown-trigger-icon {
+  font-size: 0.75rem;
+}
+
+.admin-table-dropdown-root.p-focus {
+  box-shadow: 0 0 0 2px rgba(42, 104, 87, 0.15) !important;
+}
+
+.admin-table-dropdown-blue .admin-table-dropdown-root {
+  background-color: rgba(59, 130, 246, 0.06) !important;
+  border-color: rgba(59, 130, 246, 0.28) !important;
+}
+
+.admin-table-dropdown-blue .p-dropdown-label,
+.admin-table-dropdown-blue .p-dropdown-trigger {
+  color: #1d4ed8 !important;
+}
+
+.admin-table-dropdown-blue .admin-table-dropdown-root.p-focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.16) !important;
+}
+
+.dark .admin-table-dropdown-blue .admin-table-dropdown-root {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(96, 165, 250, 0.32) !important;
+}
+
+.dark .admin-table-dropdown-blue .p-dropdown-label,
+.dark .admin-table-dropdown-blue .p-dropdown-trigger {
+  color: #93c5fd !important;
+}
+
+.admin-table-dropdown-purple .admin-table-dropdown-root {
+  background-color: rgba(147, 51, 234, 0.06) !important;
+  border-color: rgba(147, 51, 234, 0.28) !important;
+}
+
+.admin-table-dropdown-purple .p-dropdown-label,
+.admin-table-dropdown-purple .p-dropdown-trigger {
+  color: #7e22ce !important;
+}
+
+.admin-table-dropdown-purple .admin-table-dropdown-root.p-focus {
+  border-color: #9333ea !important;
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.16) !important;
+}
+
+.dark .admin-table-dropdown-purple .admin-table-dropdown-root {
+  background-color: rgba(147, 51, 234, 0.1) !important;
+  border-color: rgba(192, 132, 252, 0.32) !important;
+}
+
+.dark .admin-table-dropdown-purple .p-dropdown-label,
+.dark .admin-table-dropdown-purple .p-dropdown-trigger {
+  color: #c4b5fd !important;
+}
+
+.admin-table-dropdown-panel .p-dropdown-items {
+  padding: 0.35rem !important;
+}
+
+.admin-table-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 768px) {
+  .admin-products-toolbar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .admin-products-toolbar > button {
+    width: 100%;
+  }
+
+  .admin-products-table .p-datatable-thead > tr > th,
+  .admin-products-table .p-datatable-tbody > tr > td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* ===== Product Images Panel ===== */
+
+.admin-image-dropzone {
+  border: 2px dashed rgba(201, 184, 138, 0.3);
+  border-radius: 0.75rem;
+  background: rgba(201, 184, 138, 0.03);
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+  cursor: pointer;
+}
+.admin-image-dropzone:hover {
+  border-color: #2a6857;
+  background: rgba(42, 104, 87, 0.05);
+}
+.dark .admin-image-dropzone {
+  border-color: rgba(201, 184, 138, 0.15);
+  background: rgba(201, 184, 138, 0.02);
+}
+.dark .admin-image-dropzone:hover {
+  border-color: #c9b88a;
+  background: rgba(201, 184, 138, 0.05);
+}
+
+.admin-image-preview {
+  border: 2px solid rgba(201, 184, 138, 0.2);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  position: relative;
+}
+.dark .admin-image-preview {
+  border-color: rgba(201, 184, 138, 0.12);
+}
+
+.admin-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.admin-image-preview:hover .admin-image-overlay {
+  opacity: 1;
+}
+
+.admin-image-overlay-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.5rem;
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 500;
+  transition: background 0.15s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+.admin-image-overlay-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.admin-image-overlay-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+.admin-image-primary-badge {
+  position: absolute;
+  top: 0.375rem;
+  left: 0.375rem;
+  background: #22c55e;
+  color: white;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.admin-modifier-image-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(201, 184, 138, 0.04);
+  border: 1px solid rgba(201, 184, 138, 0.15);
+  transition: border-color 0.2s;
+}
+.admin-modifier-image-card:hover {
+  border-color: rgba(201, 184, 138, 0.3);
+}
+.dark .admin-modifier-image-card {
+  background: rgba(201, 184, 138, 0.02);
+  border-color: rgba(201, 184, 138, 0.1);
+}
+.dark .admin-modifier-image-card:hover {
+  border-color: rgba(201, 184, 138, 0.2);
+}
+
+/* ===== Order Detail Modal Sections ===== */
+.admin-order-detail-section {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(201, 184, 138, 0.15);
+}
+.admin-order-detail-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.dark .admin-order-detail-section {
+  border-bottom-color: rgba(201, 184, 138, 0.08);
+}
+
+/* Date input filter */
+.admin-date-filter {
+  background-color: rgba(201, 184, 138, 0.05);
+  border-color: rgba(201, 184, 138, 0.2);
+  color: #374151;
+  transition: border-color 0.2s;
+}
+.admin-date-filter:focus {
+  border-color: #2a6857;
+  box-shadow: 0 0 0 2px rgba(42, 104, 87, 0.15);
+}
+.dark .admin-date-filter {
+  background-color: rgba(201, 184, 138, 0.03);
+  border-color: rgba(201, 184, 138, 0.15);
+  color: #e5e7eb;
+  color-scheme: dark;
+}
+.dark .admin-date-filter:focus {
+  border-color: #c9b88a;
+  box-shadow: 0 0 0 2px rgba(201, 184, 138, 0.15);
+}
+
+

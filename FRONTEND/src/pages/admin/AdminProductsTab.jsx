@@ -15,8 +15,8 @@
  * API: adminProductsApi (fetchAdminProducts, createAdminProduct, updateAdminProduct,
  *      updateProductStatus, deleteAdminProduct)
  */
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Toast } from "primereact/toast";
+import { useState, useEffect, useCallback } from "react";
+import { useToast } from "../../context/ToastContext";
 import AdminProductsToolbar from "./AdminProductsToolbar";
 import AdminProductsTable from "./AdminProductsTable";
 import ProductFormModal from "./ProductFormModal";
@@ -28,14 +28,143 @@ import {
   updateProductStatus,
   deleteAdminProduct,
 } from "../../../api/adminProductsApi";
-import "./AdminProducts.css";
+import getApiErrorMessage from "../../utils/apiError";
+import "./AdminShared.css";
+
+const PRODUCTS_TABLE_STORAGE_KEY = "admin-products-table-state";
+const DEFAULT_LAZY_PARAMS = {
+  first: 0,
+  rows: 10,
+  page: 1,
+  sortField: null,
+  sortOrder: null,
+  search: "",
+};
+
+function normalizeProductsTableState(state) {
+  const rows = Number(state?.lazyParams?.rows) || DEFAULT_LAZY_PARAMS.rows;
+  const first = Math.max(0, Number(state?.lazyParams?.first) || 0);
+
+  return {
+    lazyParams: {
+      first,
+      rows,
+      page: Math.floor(first / rows) + 1,
+      sortField: state?.lazyParams?.sortField || null,
+      sortOrder:
+        state?.lazyParams?.sortOrder === 1 ||
+        state?.lazyParams?.sortOrder === -1
+          ? state.lazyParams.sortOrder
+          : null,
+      search: state?.lazyParams?.search || "",
+    },
+    statusFilter:
+      typeof state?.statusFilter === "boolean" ? state.statusFilter : null,
+  };
+}
+
+function getStoredProductsTableState() {
+  try {
+    const raw = sessionStorage.getItem(PRODUCTS_TABLE_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    return normalizeProductsTableState(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+function getUrlProductsTableState() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const hasProductsState =
+      params.has("productsFirst") ||
+      params.has("productsRows") ||
+      params.has("productsSortField") ||
+      params.has("productsSortOrder") ||
+      params.has("productsSearch") ||
+      params.has("productsStatus");
+
+    if (!hasProductsState) {
+      return null;
+    }
+
+    const statusValue = params.get("productsStatus");
+
+    return normalizeProductsTableState({
+      lazyParams: {
+        first: params.get("productsFirst"),
+        rows: params.get("productsRows"),
+        sortField: params.get("productsSortField"),
+        sortOrder: Number(params.get("productsSortOrder")),
+        search: params.get("productsSearch") || "",
+      },
+      statusFilter:
+        statusValue === "active"
+          ? true
+          : statusValue === "inactive"
+            ? false
+            : null,
+    });
+  } catch {
+    return null;
+  }
+}
+
+function syncProductsTableStateToUrl({ lazyParams, statusFilter }) {
+  try {
+    const url = new URL(window.location.href);
+
+    url.searchParams.set("productsFirst", String(lazyParams.first));
+    url.searchParams.set("productsRows", String(lazyParams.rows));
+
+    if (lazyParams.sortField) {
+      url.searchParams.set("productsSortField", lazyParams.sortField);
+    } else {
+      url.searchParams.delete("productsSortField");
+    }
+
+    if (lazyParams.sortOrder === 1 || lazyParams.sortOrder === -1) {
+      url.searchParams.set("productsSortOrder", String(lazyParams.sortOrder));
+    } else {
+      url.searchParams.delete("productsSortOrder");
+    }
+
+    if (lazyParams.search) {
+      url.searchParams.set("productsSearch", lazyParams.search);
+    } else {
+      url.searchParams.delete("productsSearch");
+    }
+
+    if (statusFilter === true) {
+      url.searchParams.set("productsStatus", "active");
+    } else if (statusFilter === false) {
+      url.searchParams.set("productsStatus", "inactive");
+    } else {
+      url.searchParams.delete("productsStatus");
+    }
+
+    window.history.replaceState(window.history.state, "", url.toString());
+  } catch {
+    // noop
+  }
+}
 
 /**
  * AdminProductsTab - Main orchestrator component for product management
  * Manages state for pagination, search, filtering, and product data
  */
 function AdminProductsTab() {
-  const toast = useRef(null);
+  const showToast = useToast();
+  const initialTableState =
+    getUrlProductsTableState() ||
+    getStoredProductsTableState() ||
+    normalizeProductsTableState({
+      lazyParams: DEFAULT_LAZY_PARAMS,
+      statusFilter: null,
+    });
 
   // Product data state
   const [products, setProducts] = useState([]);
@@ -45,44 +174,31 @@ function AdminProductsTab() {
   const [totalActive, setTotalActive] = useState(0);
 
   // Lazy loading parameters
-  const [lazyParams, setLazyParams] = useState({
-    first: 0,
-    rows: 10,
-    page: 1,
-    sortField: null,
-    sortOrder: null,
-    search: "",
-  });
+  const [lazyParams, setLazyParams] = useState(
+    () => initialTableState.lazyParams,
+  );
 
   // Status filter state
-  const [statusFilter, setStatusFilter] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(
+    () => initialTableState.statusFilter,
+  );
 
   // Modal states
   const [productModal, setProductModal] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [initialTab, setInitialTab] = useState(0);
+  const [productModalDirty, setProductModalDirty] = useState(false);
 
   // Operation states
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Show toast notification
-  const showToast = useCallback((severity, summary, detail) => {
-    toast.current?.show({
-      severity,
-      summary,
-      detail,
-      life: 3000,
-    });
-  }, []);
-
   // Extract error message from API error
   const getErrorMessage = (error) => {
-    return (
-      error.response?.data?.message ||
-      error.message ||
-      "An unexpected error occurred. Please try again."
+    return getApiErrorMessage(
+      error,
+      "An unexpected error occurred. Please try again.",
     );
   };
 
@@ -90,7 +206,12 @@ function AdminProductsTab() {
   const loadProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, total, totalAll: fetchedAll, totalActive: fetchedActive } = await fetchAdminProducts({
+      const {
+        data,
+        total,
+        totalAll: fetchedAll,
+        totalActive: fetchedActive,
+      } = await fetchAdminProducts({
         page: lazyParams.page,
         limit: lazyParams.rows,
         search: lazyParams.search,
@@ -116,6 +237,27 @@ function AdminProductsTab() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  useEffect(() => {
+    const normalizedState = normalizeProductsTableState({
+      lazyParams,
+      statusFilter,
+    });
+
+    try {
+      sessionStorage.setItem(
+        PRODUCTS_TABLE_STORAGE_KEY,
+        JSON.stringify({
+          lazyParams: normalizedState.lazyParams,
+          statusFilter: normalizedState.statusFilter,
+        }),
+      );
+    } catch {
+      // noop
+    }
+
+    syncProductsTableStateToUrl(normalizedState);
+  }, [lazyParams, statusFilter]);
 
   // Handle lazy loading events (pagination, sorting)
   const handleLazyLoad = useCallback((params) => {
@@ -149,6 +291,7 @@ function AdminProductsTab() {
   const handleAddProduct = useCallback(() => {
     setSelectedProduct(null);
     setInitialTab(0);
+    setProductModalDirty(false);
     setProductModal(true);
   }, []);
 
@@ -156,15 +299,23 @@ function AdminProductsTab() {
   const handleEditProduct = useCallback((product) => {
     setSelectedProduct(product);
     setInitialTab(0);
+    setProductModalDirty(false);
     setProductModal(true);
   }, []);
 
-  // Handle closing product modal — refresh list so image/portion/modifier changes are visible
+  // Reload only after a real mutation to avoid unnecessary requests on open/close.
   const handleCloseProductModal = useCallback(() => {
     setProductModal(false);
     setSelectedProduct(null);
-    loadProducts();
-  }, [loadProducts]);
+    if (productModalDirty) {
+      loadProducts();
+    }
+    setProductModalDirty(false);
+  }, [loadProducts, productModalDirty]);
+
+  const handleProductModalMutate = useCallback(() => {
+    setProductModalDirty(true);
+  }, []);
 
   // Handle saving product (create or update)
   const handleSaveProduct = useCallback(
@@ -174,6 +325,7 @@ function AdminProductsTab() {
         if (selectedProduct) {
           // Update existing product
           await updateAdminProduct(selectedProduct.product_id, formData);
+          setProductModalDirty(true);
           showToast("success", "Success", "Product updated successfully");
           // Refresh data maintaining current page
           await loadProducts();
@@ -182,10 +334,11 @@ function AdminProductsTab() {
           // Create new product
           const result = await createAdminProduct(formData);
           const newProductId = result?.data?.product_id;
+          setProductModalDirty(true);
           showToast(
             "success",
             "Success",
-            "Product created! You can now add portions and modifiers."
+            "Product created! You can now add portions and modifiers.",
           );
           // Transition modal to edit mode with the new product
           setSelectedProduct({
@@ -206,7 +359,7 @@ function AdminProductsTab() {
         setSaving(false);
       }
     },
-    [selectedProduct, loadProducts, handleCloseProductModal, showToast]
+    [selectedProduct, loadProducts, handleCloseProductModal, showToast],
   );
 
   // Handle opening delete confirmation dialog
@@ -249,7 +402,13 @@ function AdminProductsTab() {
         setDeleting(false);
       }
     },
-    [products.length, lazyParams.page, loadProducts, handleCloseDeleteDialog, showToast]
+    [
+      products.length,
+      lazyParams.page,
+      loadProducts,
+      handleCloseDeleteDialog,
+      showToast,
+    ],
   );
 
   // Handle toggling product status
@@ -260,8 +419,8 @@ function AdminProductsTab() {
         prev.map((p) =>
           p.product_id === product.product_id
             ? { ...p, is_active: newStatus }
-            : p
-        )
+            : p,
+        ),
       );
       // Optimistically update stats
       setTotalActive((prev) => prev + (newStatus ? 1 : -1));
@@ -271,7 +430,7 @@ function AdminProductsTab() {
         showToast(
           "success",
           "Success",
-          `Product ${newStatus ? "activated" : "deactivated"} successfully`
+          `Product ${newStatus ? "activated" : "deactivated"} successfully`,
         );
       } catch (error) {
         console.error("Failed to update product status:", error);
@@ -280,20 +439,18 @@ function AdminProductsTab() {
           prev.map((p) =>
             p.product_id === product.product_id
               ? { ...p, is_active: !newStatus }
-              : p
-          )
+              : p,
+          ),
         );
         setTotalActive((prev) => prev + (newStatus ? -1 : 1));
         showToast("error", "Error", getErrorMessage(error));
       }
     },
-    [showToast]
+    [showToast],
   );
 
   return (
     <div className="admin-products-container animate-fade-in flex-1 flex flex-col min-h-0">
-      <Toast ref={toast} position="top-right" />
-
       <div className="admin-products-card flex-1 flex flex-col min-h-0">
         <AdminProductsToolbar
           onSearch={handleSearch}
@@ -321,6 +478,7 @@ function AdminProductsTab() {
         onHide={handleCloseProductModal}
         product={selectedProduct}
         onSave={handleSaveProduct}
+        onMutate={handleProductModalMutate}
         saving={saving}
         initialTab={initialTab}
       />

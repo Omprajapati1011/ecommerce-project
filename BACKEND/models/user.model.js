@@ -41,7 +41,16 @@ export const refreshTokenHelper = async (id, refreshToken) => {
 
 //users can see their profile
 export const viewUserModel = async (data) => {
-  const sql = `SELECT name, email FROM user_master WHERE user_id = ?`;
+  const sql = `SELECT 
+    name,
+    email,
+    role,
+    last_login,
+    last_login AS lastLogin,
+    created_at,
+    updated_at
+    FROM user_master
+    WHERE user_id = ? AND is_deleted = 0`;
 
   const [result] = await pool.query(sql, [data]);
 

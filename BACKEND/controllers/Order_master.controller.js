@@ -13,169 +13,267 @@ import {
   getModifierValue,
   getOfferOnId,
   getOfferDetails,
-  updateOrderStatus,
   setOrderDeleted,
   getAllOrdersAdmin as modelGetAllOrdersAdmin,
   getAllItemsByCountAdmin as modelGetAllItemsByCountAdmin,
+  getOrderById,
+  updateOrderStatusWithTransition,
+  countAllOrder,
+  countAllOrdersAdmin,
   getAllItemsAdmin as modelGetAllItemsAdmin,
   findAllOrdersAdmin,
   getOrderDetailAdmin as modelGetOrderDetail,
   updatePaymentStatusAdmin as modelUpdatePaymentStatus,
+  createCancelRequest,
+  getCancelRequestsAdmin,
+  reviewCancelRequest,
+  getLatestCancelRequestForOrder,
 } from "../models/Order_master.model.js";
+import { insertQuery } from "../models/Order_items.model.js";
 
 import {
-  insertQuery
-} from "../models/Order_items.model.js";
-import { badRequest, notFound, ok, serverError, created } from "../utils/apiResponse.js";
+  badRequest,
+  notFound,
+  ok,
+  serverError,
+  created,
+  paginated,
+} from "../utils/apiResponse.js";
+
+const DEFAULT_ORDER_PAGE = 1;
+const DEFAULT_ORDER_LIMIT = 5;
+const MAX_ORDER_LIMIT = 50;
+const DEFAULT_ORDER_SORT_FIELD = "created_at";
+const DEFAULT_ORDER_SORT_ORDER = "DESC";
 
 // Create a new order from user's cart with tax, discounts, and shipping calculations
 export const Order_master = async (req, res) => {
   const user_id = req.user.id;
+  const paymentMethod = String(
+    req.body?.payment_method || "cash_on_delivery",
+  ).toLowerCase();
 
   try {
-    // Fetch user's cart items and product details
-    const cart = await getCart(user_id)
-    const productsIds = cart.map(item => item.product_id)
-    const products = await getProducts(productsIds)
-    const portionIds = cart.map(item => item.product_portion_id)
-    let price = [];
-    for (let i = 0; i < portionIds.length; i++) {
-      if (portionIds[i] == 0 || portionIds[i] == null) {
-        price.push(Number(products[i].price));
-        continue;
-      }
-      const productId = productsIds[i];
-      const portionId = portionIds[i];
-      const portionPrice = await getPortionPrice(productId, portionId)
-      price.push(Number(portionPrice[0].price))
-    }
-    const totalPrice = price.reduce((sum, val) => sum + val, 0);
-
-    // Get product categories for tax calculation
-    const rootCategoryEntries = await Promise.all(
-      products.map(async (t) => {
-        const rootId = await findRootCategory(t.category_id);
-        return [t.product_id, rootId];
-      })
-    );
-    const rootCategoryMap = Object.fromEntries(rootCategoryEntries);
-
-    // Calculate tax for each item based on root category
-    const taxAmountArray = cart.map((item, index) => {
-      const categoryId = rootCategoryMap[item.product_id];
-      const taxPercent = getTaxPercent(categoryId);
-
-      return (price[index] * taxPercent) / 100;
-    });
-
-    const totalTax = taxAmountArray.reduce((sum, value) => sum + value, 0);
-    let totalDisCountArray = [];
-    let totalDisCount = 0;
-    let offer_id = null;
-
-    /* -------- CART OFFER -------- */
-    const offerOnCart = await getOfferOnCart(user_id);
-
-    offer_id = offerOnCart[0]?.offer_id || null;
-    const cart_id = cart[0]?.cart_id;
-
-    if (offer_id == null) {
-
-      /* -------- ITEM OFFER -------- */
-      const offerOnItem = await getOfferItem(cart_id);
-
-      const item = offerOnItem.find(obj => obj.offer_id !== null);
-      const firstOfferId = item ? item.offer_id : null;
-      let used = false;
-
-      const updatedArray = await Promise.all(offerOnItem.map(async obj => {
-        if (obj.offer_id === firstOfferId && !used && firstOfferId !== null) {
-          used = true;
-          return { ...obj, offer_id: await getOfferOnId(firstOfferId) };
-        }
-        return { ...obj, offer_id: null };
-      }));
-
-      totalDisCountArray = updatedArray;
-      offer_id = firstOfferId;
-    }
-    /* ------ APPLY OFFER -------- */
-
-
-
-    const findOffer = await getOfferDetails(offer_id);
-
-    if (findOffer.length > 0) {
-      if (findOffer[0].discount_type === "percentage") {
-        totalDisCount = (totalPrice * Number(findOffer[0].discount_value)) / 100;
-      }
-
-      if (findOffer[0].discount_type === "fixed_amount") {
-        totalDisCount = Number(findOffer[0].discount_value);
-      }
+    if (!["cash_on_delivery", "stripe"].includes(paymentMethod)) {
+      return badRequest(res, "Please choose a valid payment method.");
     }
 
-    const safe = (v) => (isNaN(v) || v === null || v === undefined ? 0 : Number(v));
-    // Calculate final amount and apply shipping charges
-    const final_Amount =
-      safe(totalPrice) +
-      safe(totalTax) -
-      safe(totalDisCount);
-    let shipping_amount = 50;
-    if (final_Amount > 500) shipping_amount = 0
-    // Get user's address and set order status
+    const summary = await calculateOrderValues(user_id);
+
     const address_id = await getUserAddress(user_id);
-    const order_status = "pending"
-    const payment_status = "processing"
-
-    // Prepare order details for insertion
-    const order_num = "ORD";
+    const totalAmount = summary.finalAmount + summary.shipping_amount;
 
     const values = [
-      order_num,
+      "ORD",
       user_id,
       address_id,
-      safe(totalPrice),
-      safe(totalTax),
-      safe(shipping_amount),
-      safe(totalDisCount),
-      safe(final_Amount),
-      order_status,
-      payment_status,
+      summary.totalPrice,
+      summary.totalTax,
+      summary.shipping_amount,
+      summary.totalDisCount,
+      totalAmount,
+      "pending",
+      paymentMethod === "stripe" ? "processing" : "pending",
       0,
       user_id,
       user_id,
     ];
-    // Insert order master record and create order items
+
     const insert = await insertValue(values);
     const orderId = insert.insertId;
-    await postOrderItems(user_id, orderId, price, taxAmountArray, totalDisCountArray, cart)
-    return created(res, "Order created successfully", insert)
-  } catch (err) {
-    console.log(err)
-    return serverError(res)
-  }
-}
 
-// Retrieve all orders for a user
+    await postOrderItems(
+      user_id,
+      orderId,
+      summary.price,
+      summary.taxAmountArray,
+      [],
+      summary.cart,
+    );
+
+    const createdOrder = await getOrderById(orderId);
+
+    return created(res, "Order created successfully", {
+      ...insert,
+      order_id: orderId,
+      order_number: createdOrder?.order_number || `ORD-${orderId}`,
+      total_amount: totalAmount,
+      payment_status: paymentMethod === "stripe" ? "processing" : "pending",
+      payment_method: paymentMethod,
+    });
+  } catch (err) {
+    console.error(err);
+    return serverError(res);
+  }
+};
+export const getOrderSummery = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+
+    const summary = await calculateOrderValues(user_id);
+    return ok(res, "Order summary", {
+      total_price: summary.totalPrice,
+      tax: summary.totalTax,
+      discount: summary.totalDisCount,
+      shipping: summary.shipping_amount,
+      final_amount: summary.finalAmount + summary.shipping_amount,
+    });
+  } catch (err) {
+    if (err?.message === "Cart is empty") {
+      return ok(res, "Cart is empty", {
+        total_price: 0,
+        tax: 0,
+        discount: 0,
+        shipping: 0,
+        final_amount: 0,
+      });
+    }
+
+    console.error(err);
+    return serverError(res);
+  }
+};
+const calculateOrderValues = async (user_id) => {
+  const cart = await getCart(user_id);
+  if (cart.length === 0) {
+    throw new Error("Cart is empty");
+  }
+
+  const productsIds = cart.map((item) => item.product_id);
+  const products = await getProducts(productsIds);
+
+  const portionIds = cart.map((item) => item.product_portion_id);
+
+  let price = [];
+
+  for (let i = 0; i < portionIds.length; i++) {
+    if (portionIds[i] == 0 || portionIds[i] == null) {
+      price.push(Number(products[i].price));
+      continue;
+    }
+
+    const portionPrice = await getPortionPrice(productsIds[i], portionIds[i]);
+    price.push(Number(portionPrice[0].price));
+  }
+
+  const totalPrice = price.reduce((sum, val) => sum + val, 0);
+
+  /* TAX CALCULATION */
+
+  const rootCategoryEntries = await Promise.all(
+    products.map(async (t) => {
+      const rootId = await findRootCategory(t.category_id);
+      return [t.product_id, rootId];
+    }),
+  );
+
+  const rootCategoryMap = Object.fromEntries(rootCategoryEntries);
+
+  const taxAmountArray = cart.map((item, index) => {
+    const categoryId = rootCategoryMap[item.product_id];
+    const taxPercent = getTaxPercent(categoryId);
+
+    return (price[index] * taxPercent) / 100;
+  });
+
+  const totalTax = taxAmountArray.reduce((sum, value) => sum + value, 0);
+
+  /* DISCOUNT */
+
+  let totalDisCount = 0;
+  let offer_id = null;
+
+  const offerOnCart = await getOfferOnCart(user_id);
+  offer_id = offerOnCart[0]?.offer_id || null;
+
+  const findOffer = await getOfferDetails(offer_id);
+
+  if (findOffer.length > 0) {
+    if (findOffer[0].discount_type === "percentage") {
+      totalDisCount = (totalPrice * Number(findOffer[0].discount_value)) / 100;
+    }
+
+    if (findOffer[0].discount_type === "fixed_amount") {
+      totalDisCount = Number(findOffer[0].discount_value);
+    }
+  }
+
+  const finalAmount = totalPrice + totalTax - totalDisCount;
+
+  let shipping_amount = 50;
+  if (finalAmount > 500) shipping_amount = 0;
+
+  return {
+    cart,
+    price,
+    taxAmountArray,
+    totalPrice,
+    totalTax,
+    totalDisCount,
+    finalAmount,
+    shipping_amount,
+  };
+};
+// Retrieve all orders for a user with pagination
 export const AllOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const orders = await getAllOrder(userId);
-    if (orders.length == 0) {
-      return notFound(res, "Orders not found")
-    }
-    return ok(res, "Orders found Successfully", orders)
+
+    // Pagination parsing
+    const page = Math.max(
+      DEFAULT_ORDER_PAGE,
+      parseInt(req.query.page) || DEFAULT_ORDER_PAGE,
+    );
+    const limit = Math.min(
+      MAX_ORDER_LIMIT,
+      parseInt(req.query.limit) || DEFAULT_ORDER_LIMIT,
+    );
+    const offset = (page - 1) * limit;
+    const sortField = req.query.sortField || DEFAULT_ORDER_SORT_FIELD;
+    const sortOrder =
+      String(req.query.sortOrder || DEFAULT_ORDER_SORT_ORDER).toUpperCase() ===
+      "ASC"
+        ? "ASC"
+        : DEFAULT_ORDER_SORT_ORDER;
+
+    const total = await countAllOrder(userId);
+    const orders = await getAllOrder(
+      userId,
+      limit,
+      offset,
+      sortField,
+      sortOrder,
+    );
+
+    // Always return paginated response, even if empty, to update frontend metadata
+    return paginated(
+      res,
+      orders.length > 0 ? "Orders found Successfully" : "No orders found",
+      {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+      orders,
+    );
   } catch (error) {
-    return serverError(res)
+    console.error(error);
+    return serverError(res);
   }
-}
+};
 
 // Retrieve a specific order by order ID
 
-
 // Create order item records for each product in the order
-export const postOrderItems = async (userId, orderId, price, taxAmountArray, totalDisCountArray, cart) => {
+export const postOrderItems = async (
+  userId,
+  orderId,
+  price,
+  taxAmountArray,
+  totalDisCountArray,
+  cart,
+) => {
   const cart_id = cart[0]?.cart_id;
   // Extract product IDs from cart
   const productIds = cart.map((item) => item.product_id);
@@ -185,31 +283,43 @@ export const postOrderItems = async (userId, orderId, price, taxAmountArray, tot
   // Fetch primary category for each product
   const productCategories = await getCompareProductCategory(productIds);
   const categoryIds = productCategories.map((item) => item.category_id);
-  const modifierIds = cart.map(item => item.modifier_id)
-  const portionIds = cart.map(item => item.product_portion_id)
-  const portionRows = await getPortionValue(portionIds)
-  const modifierRows = await getModifierValue(modifierIds)
-  const quantities = cart.map(item => item.quantity)
+  
+  // Collect all modifier IDs across all cart items
+  const allModifierIds = [];
+  cart.forEach((item) => {
+    if (item.modifier_ids && item.modifier_ids.length > 0) {
+      allModifierIds.push(...item.modifier_ids);
+    }
+  });
+  const uniqueModifierIds = [...new Set(allModifierIds)];
+
+  const portionIds = cart.map((item) => item.product_portion_id);
+  const portionRows = await getPortionValue(portionIds);
+  const modifierRows = uniqueModifierIds.length > 0 ? await getModifierValue(uniqueModifierIds) : [];
+  const quantities = cart.map((item) => item.quantity);
   const portionMap = Object.fromEntries(
-    portionRows.map(p => [p.portion_id, p.portion_value])
+    portionRows.map((p) => [p.portion_id, p.portion_value]),
   );
 
-  const modifierMap = Object.fromEntries(
-    modifierRows.map(m => [m.modifier_id, m.modifier_value])
-  );
+  const modifierMap = {};
+  modifierRows.forEach(m => {
+     modifierMap[m.modifier_id] = m;
+  });
 
   // Fetch product names
   const values = [];
   const products = await getProducts(productIds);
   // Create map of product IDs to names
   const productMap = Object.fromEntries(
-    products.map(p => [p.product_id, p.name])
+    products.map((p) => [p.product_id, p.name]),
   );
 
   if (!totalDisCountArray || totalDisCountArray.length === 0) {
     totalDisCountArray = new Array(cart.length).fill(0);
   }
-  console.log(totalDisCountArray)
+
+  const modifiersMapping = [];
+
   // Build order item records with calculated totals
   for (let i = 0; i < cart.length; i++) {
     // Apply shipping charges based on item price
@@ -221,29 +331,35 @@ export const postOrderItems = async (userId, orderId, price, taxAmountArray, tot
     const d = Number(totalDisCountArray[i]?.offer_id) || 0;
     const finalTotal = p + t - d;
 
+    const itemModifiers = cart[i].modifier_ids || [];
+    const itemModifierObjects = itemModifiers.map(id => modifierMap[id]).filter(Boolean);
+    const primaryModifierId = itemModifierObjects.length > 0 ? itemModifierObjects[0].modifier_id : null;
+    const primaryModifierValue = itemModifierObjects.length > 0 ? itemModifierObjects[0].modifier_value : null;
+
+    modifiersMapping.push(itemModifierObjects);
 
     // Prepare order item data
     const value = [
       orderId,
       productIds[i],
       portionIds[i],
-      modifierIds[i],
+      primaryModifierId,
       productMap[productIds[i]] || null,
       portionMap[portionIds[i]] || null,
-      modifierMap[modifierIds[i]] || null,
+      primaryModifierValue,
       quantities[i],
       p,
       d,
       t,
       finalTotal,
       userId,
-      userId
+      userId,
     ];
     values.push(value);
   }
   // Insert all order items into database
-  await insertQuery(values, cart_id)
-}
+  await insertQuery(values, cart_id, orderId, modifiersMapping);
+};
 
 // Find root category ID for tax calculation
 const findRootCategory = async (categoryId) => {
@@ -255,16 +371,37 @@ const findRootCategory = async (categoryId) => {
 const getTaxPercent = (rootCategoryId) => {
   const TAX_RULES = {
     1: 18,
-    27: 5
+    27: 5,
   };
   return TAX_RULES[rootCategoryId] || 0;
-}
+};
 export const changeOrderStatusByAdmin = async (req, res) => {
   try {
     const latestStatus = req.body.latestStatus;
     const order_id = req.params.id;
-    const rows = await updateOrderStatus(order_id, latestStatus);
-    return ok(res, "order Update Successfully", rows);
+
+    if (!latestStatus || !ALLOWED_STATUSES.has(latestStatus)) {
+      return badRequest(res, "Please choose a valid order status.");
+    }
+
+    const result = await updateOrderStatusWithTransition(
+      order_id,
+      latestStatus,
+      req.user.id,
+      null,
+    );
+
+    if (result && result.reason === "INVALID_STATUS")
+      return badRequest(res, "Please choose a valid order status.");
+    if (result && result.reason === "NOT_FOUND")
+      return notFound(res, "Order not found");
+    if (result && result.reason === "INVALID_TRANSITION")
+      return badRequest(res, "This order cannot be moved to that status yet.");
+
+    if (!result || result.affectedRows === 0)
+      return notFound(res, "Order not found or no change applied");
+
+    return ok(res, "Order status updated successfully", result);
   } catch (err) {
     console.error(err);
     return serverError(res);
@@ -285,8 +422,39 @@ export const deleteOrder = async (req, res) => {
 export const cancelOrder = async (req, res) => {
   try {
     const order_id = req.params.id;
-    const rows = await updateOrderStatus(order_id, "cancelled");
-    return ok(res, "cancel Order Succesfully", rows);
+    const order = await getOrderById(order_id);
+    if (!order) return notFound(res, "Order not found");
+
+    if (order.user_id !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "You do not have permission to cancel this order." });
+    }
+
+    if (!USER_CANCELABLE_STATUSES.has(order.order_status)) {
+      return badRequest(res, "This order can no longer be cancelled.");
+    }
+
+    const result = await updateOrderStatusWithTransition(
+      order_id,
+      "cancelled",
+      req.user.id,
+      req.user.id,
+    );
+
+    if (result && result.reason === "NOT_OWNER")
+      return res
+        .status(403)
+        .json({ message: "You do not have permission to do that." });
+    if (result && result.reason === "INVALID_TRANSITION")
+      return badRequest(res, "This order cannot be cancelled right now.");
+    if (result && result.reason === "NOT_FOUND")
+      return notFound(res, "Order not found");
+
+    if (!result || result.affectedRows === 0)
+      return serverError(res, "Failed to cancel order");
+
+    return ok(res, "Order cancelled successfully", result);
   } catch (err) {
     console.error(err);
     return serverError(res);
@@ -296,8 +464,34 @@ export const cancelOrder = async (req, res) => {
 export const returnOrderByUser = async (req, res) => {
   try {
     const order_id = req.params.id;
-    const rows = await updateOrderStatus(order_id, "returned");
-    return ok(res, "Order return SuccessFully", rows);
+    const order = await getOrderById(order_id);
+    if (!order) return notFound(res, "Order not found");
+
+    if (order.user_id !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "You do not have permission to return this order." });
+    }
+
+    if (order.order_status !== "delivered") {
+      return badRequest(res, "Only delivered orders can be returned.");
+    }
+
+    const result = await updateOrderStatusWithTransition(
+      order_id,
+      "returned",
+      req.user.id,
+      req.user.id,
+    );
+
+    if (result && result.reason === "INVALID_TRANSITION")
+      return badRequest(res, "This order cannot be returned right now.");
+    if (result && result.reason === "NOT_FOUND")
+      return notFound(res, "Order not found");
+    if (!result || result.affectedRows === 0)
+      return serverError(res, "Failed to mark order as returned");
+
+    return ok(res, "Order return processed successfully", result);
   } catch (err) {
     console.error(err);
     return serverError(res);
@@ -306,8 +500,185 @@ export const returnOrderByUser = async (req, res) => {
 
 export const getAllOrderByAdmin = async (req, res) => {
   try {
-    const rows = await modelGetAllOrdersAdmin();
-    return ok(res, "all order fetched seccessfully", rows);
+    const page = Math.max(
+      DEFAULT_ORDER_PAGE,
+      parseInt(req.query.page) || DEFAULT_ORDER_PAGE,
+    );
+    const limit = Math.min(
+      MAX_ORDER_LIMIT,
+      parseInt(req.query.limit) || DEFAULT_ORDER_LIMIT,
+    );
+    const offset = (page - 1) * limit;
+    const sortField = req.query.sortField || "created_at";
+    const sortOrder =
+      String(req.query.sortOrder || "DESC").toUpperCase() === "ASC"
+        ? "asc"
+        : "desc";
+
+    const filters = {
+      search: req.query.search || undefined,
+      order_status: req.query.status || undefined,
+    };
+
+    const result = await findAllOrdersAdmin(filters, {
+      limit,
+      offset,
+      sortField,
+      sortOrder,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "all orders fetched successfully",
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: result.total,
+        totalPages: Math.ceil(result.total / limit) || 1,
+        hasNextPage: page < Math.ceil(result.total / limit),
+        hasPrevPage: page > 1,
+      },
+      stats: result.stats,
+      data: result.data,
+    });
+  } catch (err) {
+    console.error(err);
+    return serverError(res);
+  }
+};
+
+export const requestCancelOrderByUser = async (req, res) => {
+  try {
+    const order_id = req.params.id;
+    const order = await getOrderById(order_id);
+
+    if (!order) {
+      return notFound(res, "Order not found");
+    }
+
+    if (order.user_id !== req.user.id) {
+      return res
+        .status(403)
+        .json({
+          message:
+            "You do not have permission to request cancellation for this order.",
+        });
+    }
+
+    if (!USER_CANCELABLE_STATUSES.has(order.order_status)) {
+      return badRequest(
+        res,
+        "This order cannot accept a cancellation request right now.",
+      );
+    }
+
+    const latestRequest = await getLatestCancelRequestForOrder(order_id);
+    if (
+      latestRequest &&
+      latestRequest.user_id === req.user.id &&
+      String(latestRequest.status).toLowerCase() === "pending"
+    ) {
+      return badRequest(
+        res,
+        "A cancellation request for this order is already pending.",
+      );
+    }
+
+    const result = await createCancelRequest({
+      orderId: order_id,
+      userId: req.user.id,
+      reason: req.body?.reason || null,
+    });
+
+    if (result.reason === "ALREADY_PENDING") {
+      return badRequest(res, "Cancellation request is already pending");
+    }
+
+    return created(
+      res,
+      "Cancellation request submitted successfully",
+      result.data,
+    );
+  } catch (err) {
+    console.error(err);
+    return serverError(res);
+  }
+};
+
+export const getOrderDetailByAdmin = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const order = await modelGetOrderDetail(orderId);
+
+    if (!order) {
+      return notFound(res, "Order not found");
+    }
+
+    return ok(res, "Order fetched successfully", order);
+  } catch (err) {
+    console.error(err);
+    return serverError(res);
+  }
+};
+
+export const getCancelRequestsByAdmin = async (req, res) => {
+  try {
+    const requests = await getCancelRequestsAdmin({
+      status: req.query.status || undefined,
+      limit: req.query.limit || 100,
+    });
+
+    return ok(res, "Cancellation requests fetched successfully", {
+      pendingCount: requests.filter(
+        (item) => String(item.status).toLowerCase() === "pending",
+      ).length,
+      requests,
+    });
+  } catch (err) {
+    console.error(err);
+    return serverError(res);
+  }
+};
+
+export const reviewCancelRequestByAdmin = async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const action = req.body?.action;
+    const adminNote = req.body?.admin_note || null;
+
+    const result = await reviewCancelRequest({
+      requestId,
+      action,
+      reviewedBy: req.user.id,
+      adminNote,
+    });
+
+    if (result.reason === "INVALID_ACTION") {
+      return badRequest(res, "Invalid review action");
+    }
+    if (result.reason === "NOT_FOUND") {
+      return notFound(res, "Cancellation request not found");
+    }
+    if (result.reason === "ALREADY_REVIEWED") {
+      return badRequest(
+        res,
+        "This cancellation request has already been reviewed.",
+      );
+    }
+    if (result.reason === "ORDER_NOT_CANCELABLE") {
+      return badRequest(
+        res,
+        "This order can no longer be cancelled, so the request cannot be approved.",
+      );
+    }
+
+    return ok(
+      res,
+      action === "approve"
+        ? "Cancellation request approved successfully"
+        : "Cancellation request rejected successfully",
+      result,
+    );
   } catch (err) {
     console.error(err);
     return serverError(res);
@@ -334,109 +705,76 @@ export const getAllItemsAdmin = async (req, res) => {
   }
 };
 
-/**
- * GET /api/order/admin/orders
- *
- * Admin endpoint: Returns paginated orders enriched with user, address, and
- * payment data. Supports search, filters, and sorting via query params.
- *
- * Query params: page, limit, search, sortField, sortOrder, order_status,
- *               payment_status, payment_method, date_from, date_to
- *
- * Response: { pagination, stats, data[] }
- */
-export const getAdminOrdersPaginated = async (req, res) => {
+const ALLOWED_STATUSES = new Set([
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "completed",
+  "cancelled",
+  "returned",
+]);
+
+const ALLOWED_PAYMENT_STATUSES = new Set([
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+  "refunded",
+]);
+
+export const changePaymentStatusByAdmin = async (req, res) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(50, parseInt(req.query.limit) || 10);
-    const offset = (page - 1) * limit;
+    const paymentStatus = req.body.paymentStatus;
+    const order_id = req.params.id;
 
-    const filters = {};
-    if (req.query.search) filters.search = req.query.search;
-    if (req.query.order_status) filters.order_status = req.query.order_status;
-    if (req.query.payment_status) filters.payment_status = req.query.payment_status;
-    if (req.query.payment_method) filters.payment_method = req.query.payment_method;
-    if (req.query.date_from) filters.date_from = req.query.date_from;
-    if (req.query.date_to) filters.date_to = req.query.date_to;
+    if (!paymentStatus || !ALLOWED_PAYMENT_STATUSES.has(paymentStatus)) {
+      return badRequest(res, "Please choose a valid payment status.");
+    }
 
-    const pagination = {
-      limit,
-      offset,
-      sortField: req.query.sortField || null,
-      sortOrder: req.query.sortOrder || "desc",
-    };
+    const result = await modelUpdatePaymentStatus(
+      order_id,
+      paymentStatus,
+      req.user.id,
+    );
 
-    const { total, data, stats } = await findAllOrdersAdmin(filters, pagination);
+    if (result && result.reason === "INVALID_STATUS") {
+      return badRequest(res, "Please choose a valid payment status.");
+    }
+    if (result && result.reason === "INVALID_TRANSITION") {
+      return badRequest(
+        res,
+        "This payment cannot be moved to that status yet.",
+      );
+    }
+    if (result && result.reason === "STRIPE_MANAGED") {
+      return badRequest(
+        res,
+        "Stripe payment updates are handled automatically, so this status is view-only.",
+      );
+    }
+    if (result && result.reason === "COD_NOT_DELIVERED") {
+      return badRequest(
+        res,
+        "Cash on delivery payments can only be completed after delivery",
+      );
+    }
+    if (result && result.reason === "INVALID_REFUND_STATE") {
+      return badRequest(
+        res,
+        "Only delivered, completed, cancelled, or refunded orders can be refunded",
+      );
+    }
 
-    return ok(res, "Orders fetched successfully", {
-      pagination: {
-        currentPage: page,
-        itemsPerPage: limit,
-        totalItems: total,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPrevPage: page > 1,
-      },
-      stats,
-      data,
-    });
+    if (!result || result.affectedRows === 0) {
+      return notFound(res, "Order not found or no change applied");
+    }
+
+    return ok(res, "Payment status updated successfully", result);
   } catch (err) {
-    console.error("getAdminOrdersPaginated error:", err);
-    return serverError(res, "Failed to fetch orders");
+    console.error(err);
+    return serverError(res);
   }
 };
 
-/**
- * GET /api/order/admin/orders/:id
- *
- * Admin endpoint: Returns a single order with full user info, shipping
- * address, order items, and payment history. Used by the order detail modal.
- */
-export const getAdminOrderDetail = async (req, res) => {
-  try {
-    const orderId = parseInt(req.params.id);
-    if (!orderId || orderId <= 0) {
-      return badRequest(res, "Invalid order ID");
-    }
-
-    const order = await modelGetOrderDetail(orderId);
-    if (!order) {
-      return notFound(res, "Order not found");
-    }
-
-    return ok(res, "Order detail fetched successfully", order);
-  } catch (err) {
-    console.error("getAdminOrderDetail error:", err);
-    return serverError(res, "Failed to fetch order detail");
-  }
-};
-
-/**
- * PATCH /api/order/admin/orders/:id/payment-status
- *
- * Admin endpoint: Manually update the payment_status on an order.
- * Validates against allowed enum values before writing to the database.
- *
- * Body: { paymentStatus: "pending"|"processing"|"completed"|"failed"|"refunded" }
- */
-export const updatePaymentStatusByAdmin = async (req, res) => {
-  try {
-    const orderId = parseInt(req.params.id);
-    const { paymentStatus } = req.body;
-
-    const validStatuses = ["pending", "processing", "completed", "failed", "refunded"];
-    if (!paymentStatus || !validStatuses.includes(paymentStatus)) {
-      return badRequest(res, `Invalid payment status. Use: ${validStatuses.join(", ")}`);
-    }
-
-    const result = await modelUpdatePaymentStatus(orderId, paymentStatus);
-    if (result.affectedRows === 0) {
-      return notFound(res, "Order not found");
-    }
-
-    return ok(res, "Payment status updated successfully", { order_id: orderId, payment_status: paymentStatus });
-  } catch (err) {
-    console.error("updatePaymentStatusByAdmin error:", err);
-    return serverError(res, "Failed to update payment status");
-  }
-};
+const USER_CANCELABLE_STATUSES = new Set(["pending", "processing"]);

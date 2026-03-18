@@ -16,27 +16,32 @@
  *
  * Consumed by: AdminProductsTab
  */
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
 import { InputSwitch } from "primereact/inputswitch";
+import { Dropdown } from "primereact/dropdown";
 import { Skeleton } from "primereact/skeleton";
 import { Pencil, Trash2, ImageOff } from "lucide-react";
+import SmartImage from "../../components/common/SmartImage";
+import { getOptimizedImageProps } from "../../utils/image";
 
-const formatPrice = (price) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-  }).format(price || 0);
+const priceFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+});
 
-/** Insert Cloudinary transforms into a URL for optimized thumbnails. */
-const cloudinaryThumb = (url, size = 80) => {
-  if (!url || !url.includes("/upload/")) return url;
-  return url.replace(
-    "/upload/",
-    `/upload/w_${size},h_${size},c_fill,q_auto,f_auto/`
-  );
+const formatPrice = (price) => priceFormatter.format(price || 0);
+
+const tableDropdownPt = {
+  input: { className: "px-3 text-xs font-medium leading-none" },
+  trigger: { className: "w-8" },
+  panel: {
+    className:
+      "admin-dropdown-panel admin-table-dropdown-panel rounded-lg shadow-xl mt-1",
+  },
+  item: { className: "text-xs font-medium" },
 };
 
 /** Parse "1@@256 GB||45000||42000||50;;2@@512 GB||55000||||30" into array of objects */
@@ -57,60 +62,22 @@ function parsePortionDetails(raw) {
   });
 }
 
-/** Parse "1@@Color: Red||50||4;;2@@Size: Large||0||5" into array of objects */
+/** Parse "1@@10@@Color: Red||50||4||https://...;;2@@11@@Size: Large||0||5||" into array of objects */
 function parseModifierDetails(raw) {
   if (!raw) return [];
   return raw.split(";;").map((item) => {
-    const atIdx = item.indexOf("@@");
-    const ppId = Number(item.substring(0, atIdx));
-    const rest = item.substring(atIdx + 2);
+    const [ppIdRaw, modifierPortionIdRaw, ...restParts] = item.split("@@");
+    const ppId = Number(ppIdRaw);
+    const modifierPortionId = Number(modifierPortionIdRaw);
+    const rest = restParts.join("@@");
     // Split from the right: label||additionalPrice||stock
     const parts = rest.split("||");
+    const imageUrl = parts.pop() || "";
     const stock = Number(parts.pop()) || 0;
     const additionalPrice = Number(parts.pop()) || 0;
     const label = parts.join("||").trim();
-    return { ppId, label, additionalPrice, stock };
+    return { ppId, modifierPortionId, label, additionalPrice, stock, imageUrl };
   });
-}
-
-/**
- * ProductImage - Shows skeleton shimmer while loading, fades in on load
- */
-function ProductImage({ src, alt }) {
-  const [status, setStatus] = useState("loading");
-
-  useEffect(() => {
-    setStatus("loading");
-  }, [src]);
-
-  return (
-    <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0 relative">
-      {status === "loading" && (
-        <Skeleton
-          width="2.5rem"
-          height="2.5rem"
-          borderRadius="0.5rem"
-          className="absolute inset-0"
-        />
-      )}
-      {status !== "error" && (
-        <img
-          src={src}
-          alt={alt}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
-            status === "loaded" ? "opacity-100" : "opacity-0"
-          }`}
-          onLoad={() => setStatus("loaded")}
-          onError={() => setStatus("error")}
-        />
-      )}
-      {status === "error" && (
-        <div className="w-full h-full flex items-center justify-center">
-          <ImageOff className="w-5 h-5 text-gray-400" />
-        </div>
-      )}
-    </div>
-  );
 }
 
 /**
@@ -132,23 +99,40 @@ function AdminProductsTable({
   const [selectedModifiers, setSelectedModifiers] = useState({});
 
   // Enrich products with selection state so DataTable re-renders cells when selections change
-  const tableData = useMemo(() =>
-    products.map((p) => ({
-      ...p,
-      _selectedPpId: selectedPortions[p.product_id] ?? null,
-      _selectedModifier: selectedModifiers[p.product_id] ?? null,
-    })),
-    [products, selectedPortions, selectedModifiers]
+  const tableData = useMemo(
+    () =>
+      products.map((p) => ({
+        ...p,
+        _portions: parsePortionDetails(p.portion_details),
+        _modifiers: parseModifierDetails(p.modifier_details),
+        _selectedPpId: selectedPortions[p.product_id] ?? null,
+        _selectedModifier: selectedModifiers[p.product_id] ?? null,
+      })),
+    [products, selectedPortions, selectedModifiers],
   );
 
   // Image column template
   const imageBodyTemplate = (rowData) => {
-    const imageUrl = rowData.image_url || rowData.thumbnail || rowData.image;
+    const selectedModifier = getSelectedModifier(rowData, rowData._portions);
+    const imageUrl =
+      selectedModifier?.imageUrl ||
+      rowData.image_url ||
+      rowData.thumbnail ||
+      rowData.image;
     if (imageUrl) {
+      const imageProps = getOptimizedImageProps(imageUrl, {
+        width: 80,
+        height: 80,
+        srcSetWidths: [80, 160],
+        sizes: "40px",
+      });
+
       return (
-        <ProductImage
-          src={cloudinaryThumb(imageUrl, 80)}
+        <SmartImage
+          {...imageProps}
           alt={rowData.display_name || rowData.name}
+          wrapperClassName="h-10 w-10 flex-shrink-0 rounded-lg"
+          className="h-full w-full object-cover"
         />
       );
     }
@@ -176,22 +160,26 @@ function AdminProductsTable({
   // Helper: find selected modifier object for a row
   const getSelectedModifier = (rowData, portions) => {
     if (!rowData._selectedModifier) return null;
-    const allModifiers = parseModifierDetails(rowData.modifier_details);
     const selectedPpId = rowData._selectedPpId ?? (portions[0]?.ppId || null);
-    return allModifiers.find(
-      (m) => m.label === rowData._selectedModifier && m.ppId === selectedPpId
-    ) || null;
+    return (
+      rowData._modifiers.find(
+        (m) =>
+          m.modifierPortionId === Number(rowData._selectedModifier) &&
+          (selectedPpId ? m.ppId === selectedPpId : true),
+      ) || null
+    );
   };
 
   // Price column — reacts to selected portion + modifier additional price
   const priceBodyTemplate = (rowData) => {
-    const portions = parsePortionDetails(rowData.portion_details);
+    const portions = rowData._portions;
     const mod = getSelectedModifier(rowData, portions);
     const modifierExtra = mod?.additionalPrice || 0;
 
     if (portions.length > 0) {
       const selectedPpId = rowData._selectedPpId ?? portions[0].ppId;
-      const portion = portions.find((p) => p.ppId === selectedPpId) || portions[0];
+      const portion =
+        portions.find((p) => p.ppId === selectedPpId) || portions[0];
 
       const basePrice = portion.price + modifierExtra;
       const discPrice = portion.discountedPrice
@@ -235,20 +223,19 @@ function AdminProductsTable({
         </div>
       );
     }
-    return (
-      <span className="font-medium">{formatPrice(basePrice)}</span>
-    );
+    return <span className="font-medium">{formatPrice(basePrice)}</span>;
   };
 
   // Stock column — reacts to selected portion + modifier
   const stockBodyTemplate = (rowData) => {
-    const portions = parsePortionDetails(rowData.portion_details);
+    const portions = rowData._portions;
     let stock = rowData.stock || 0;
 
     // Show portion-specific stock when a portion is selected
     if (portions.length > 0) {
       const selectedPpId = rowData._selectedPpId ?? portions[0].ppId;
-      const portion = portions.find((p) => p.ppId === selectedPpId) || portions[0];
+      const portion =
+        portions.find((p) => p.ppId === selectedPpId) || portions[0];
       stock = portion.stock;
     }
 
@@ -269,20 +256,29 @@ function AdminProductsTable({
 
   // Portions — native <select> for reliable interaction inside DataTable
   const portionsBodyTemplate = (rowData) => {
-    const portions = parsePortionDetails(rowData.portion_details);
+    const portions = rowData._portions;
     if (portions.length === 0) {
-      return <span className="text-xs text-gray-400 dark:text-gray-500">None</span>;
+      return (
+        <span className="text-xs text-gray-400 dark:text-gray-500">None</span>
+      );
     }
 
     const selectedPpId = rowData._selectedPpId ?? portions[0].ppId;
 
     return (
-      <select
+      <Dropdown
         value={selectedPpId}
+        options={portions.map((p) => ({
+          label: p.value,
+          value: p.ppId,
+        }))}
         onChange={(e) => {
-          e.stopPropagation();
-          const ppId = Number(e.target.value);
-          setSelectedPortions((prev) => ({ ...prev, [rowData.product_id]: ppId }));
+          e.originalEvent?.stopPropagation?.();
+          const ppId = Number(e.value);
+          setSelectedPortions((prev) => ({
+            ...prev,
+            [rowData.product_id]: ppId,
+          }));
           // Reset modifier selection when portion changes
           setSelectedModifiers((prev) => {
             const next = { ...prev };
@@ -291,62 +287,79 @@ function AdminProductsTable({
           });
         }}
         onClick={(e) => e.stopPropagation()}
-        className="admin-table-select admin-table-select-blue"
-      >
-        {portions.map((p) => (
-          <option key={p.ppId} value={p.ppId}>{p.value}</option>
-        ))}
-      </select>
+        className="admin-table-dropdown admin-table-dropdown-blue w-full"
+        pt={{
+          root: {
+            className:
+              "admin-dropdown-root admin-table-dropdown-root rounded-lg h-9 flex items-center shadow-none",
+          },
+          ...tableDropdownPt,
+        }}
+      />
     );
   };
 
   // Modifiers — native <select> filtered by selected portion
   const modifiersBodyTemplate = (rowData) => {
-    const allModifiers = parseModifierDetails(rowData.modifier_details);
+    const allModifiers = rowData._modifiers;
     if (allModifiers.length === 0) {
-      return <span className="text-xs text-gray-400 dark:text-gray-500">None</span>;
+      return (
+        <span className="text-xs text-gray-400 dark:text-gray-500">None</span>
+      );
     }
 
-    const portions = parsePortionDetails(rowData.portion_details);
+    const portions = rowData._portions;
     const selectedPpId = rowData._selectedPpId ?? (portions[0]?.ppId || null);
 
     // Filter modifiers by the selected portion
     const filtered = selectedPpId
-      ? allModifiers.filter((m) => m.ppId === selectedPpId)
+      ? allModifiers.filter((m) => m.ppId === selectedPpId || m.ppId === 0)
       : allModifiers;
 
     if (filtered.length === 0) {
-      return <span className="text-xs text-gray-400 dark:text-gray-500">None</span>;
+      return (
+        <span className="text-xs text-gray-400 dark:text-gray-500">None</span>
+      );
     }
 
     // Deduplicate labels
-    const unique = [...new Map(filtered.map((m) => [m.label, m])).values()];
+    const unique = [
+      ...new Map(filtered.map((m) => [m.modifierPortionId, m])).values(),
+    ];
 
     return (
-      <select
-        value={rowData._selectedModifier ?? ""}
+      <Dropdown
+        value={rowData._selectedModifier ?? null}
+        options={[
+          { label: `None (${unique.length} available)`, value: null },
+          ...unique.map((m) => ({
+            label: m.label,
+            value: m.modifierPortionId,
+          })),
+        ]}
         onChange={(e) => {
-          e.stopPropagation();
-          const val = e.target.value;
+          e.originalEvent?.stopPropagation?.();
+          const val = e.value;
           setSelectedModifiers((prev) => {
             if (!val) {
               const next = { ...prev };
               delete next[rowData.product_id];
               return next;
             }
-            return { ...prev, [rowData.product_id]: val };
+            return { ...prev, [rowData.product_id]: Number(val) };
           });
         }}
         onClick={(e) => e.stopPropagation()}
-        className="admin-table-select admin-table-select-purple"
-      >
-        <option value="">
-          None ({unique.length} available)
-        </option>
-        {unique.map((m) => (
-          <option key={m.label} value={m.label}>{m.label}</option>
-        ))}
-      </select>
+        className="admin-table-dropdown admin-table-dropdown-purple w-full"
+        placeholder={`None (${unique.length} available)`}
+        pt={{
+          root: {
+            className:
+              "admin-dropdown-root admin-table-dropdown-root rounded-lg h-9 flex items-center shadow-none",
+          },
+          ...tableDropdownPt,
+        }}
+      />
     );
   };
 
@@ -451,7 +464,7 @@ function AdminProductsTable({
       <DataTable
         value={loading ? skeletonData : tableData}
         lazy
-        paginator
+        paginator={totalRecords > 5}
         first={lazyParams.first}
         rows={lazyParams.rows}
         totalRecords={totalRecords}
@@ -461,22 +474,77 @@ function AdminProductsTable({
         sortOrder={lazyParams.sortOrder}
         dataKey="product_id"
         scrollable
+        scrollHeight="calc(100vh - 18rem)"
         emptyMessage="No products found."
         className="admin-products-table"
         rowsPerPageOptions={[5, 10, 25, 50]}
         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
         tableStyle={{ minWidth: "70rem" }}
       >
-        <Column field="product_id" header="ID" sortable body={loading ? skeletonTemplate : null} style={{ width: "5rem" }} />
-        <Column header="Image" body={loading ? skeletonImageTemplate : imageBodyTemplate} style={{ width: "5rem" }} />
-        <Column field="display_name" header="Name" sortable body={loading ? skeletonTemplate : nameBodyTemplate} style={{ minWidth: "14rem" }} />
-        <Column field="category_name" header="Category" sortable body={loading ? skeletonTemplate : null} style={{ minWidth: "8rem" }} />
-        <Column field="price" header="Price" sortable body={loading ? skeletonTemplate : priceBodyTemplate} style={{ minWidth: "8rem" }} />
-        <Column field="stock" header="Stock" sortable body={loading ? skeletonTemplate : stockBodyTemplate} style={{ minWidth: "5rem" }} />
-        <Column field="portion_count" header="Portions" body={loading ? skeletonDropdownTemplate : portionsBodyTemplate} style={{ minWidth: "10rem" }} />
-        <Column field="modifier_count" header="Modifiers" body={loading ? skeletonDropdownTemplate : modifiersBodyTemplate} style={{ minWidth: "10rem" }} />
-        <Column field="is_active" header="Status" body={loading ? skeletonSwitchTemplate : statusBodyTemplate} style={{ minWidth: "8rem" }} />
-        <Column header="Actions" body={loading ? skeletonActionTemplate : actionBodyTemplate} exportable={false} style={{ minWidth: "7rem" }} />
+        <Column
+          field="product_id"
+          header="ID"
+          sortable
+          body={loading ? skeletonTemplate : null}
+          style={{ width: "5rem" }}
+        />
+        <Column
+          header="Image"
+          body={loading ? skeletonImageTemplate : imageBodyTemplate}
+          style={{ width: "5rem" }}
+        />
+        <Column
+          field="display_name"
+          header="Name"
+          sortable
+          body={loading ? skeletonTemplate : nameBodyTemplate}
+          style={{ minWidth: "14rem" }}
+        />
+        <Column
+          field="category_name"
+          header="Category"
+          sortable
+          body={loading ? skeletonTemplate : null}
+          style={{ minWidth: "8rem" }}
+        />
+        <Column
+          field="price"
+          header="Price"
+          sortable
+          body={loading ? skeletonTemplate : priceBodyTemplate}
+          style={{ minWidth: "8rem" }}
+        />
+        <Column
+          field="stock"
+          header="Stock"
+          sortable
+          body={loading ? skeletonTemplate : stockBodyTemplate}
+          style={{ minWidth: "5rem" }}
+        />
+        <Column
+          field="portion_count"
+          header="Portions"
+          body={loading ? skeletonDropdownTemplate : portionsBodyTemplate}
+          style={{ minWidth: "10rem" }}
+        />
+        <Column
+          field="modifier_count"
+          header="Modifiers"
+          body={loading ? skeletonDropdownTemplate : modifiersBodyTemplate}
+          style={{ minWidth: "10rem" }}
+        />
+        <Column
+          field="is_active"
+          header="Status"
+          body={loading ? skeletonSwitchTemplate : statusBodyTemplate}
+          style={{ minWidth: "8rem" }}
+        />
+        <Column
+          header="Actions"
+          body={loading ? skeletonActionTemplate : actionBodyTemplate}
+          exportable={false}
+          style={{ minWidth: "7rem" }}
+        />
       </DataTable>
     </div>
   );

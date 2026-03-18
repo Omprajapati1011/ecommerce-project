@@ -1,8 +1,12 @@
 import express from "express";
-import { auth as authMiddleware } from "../middlewares/auth.middleware.js";
+import {
+  auth as authMiddleware,
+  adminOnly,
+} from "../middlewares/auth.middleware.js";
 import { reviewController } from "../controllers/review.controller.js";
 import {
   createReviewSchema,
+  bulkProductSummarySchema,
   getReviewsQuerySchema,
   productIdParamSchema,
   reviewIdParamSchema,
@@ -15,15 +19,25 @@ import {
 const router = express.Router();
 
 // Create review (customer only).
-router.post("/", 
-  authMiddleware, 
-  validateBody(createReviewSchema), reviewController.create);
+router.post(
+  "/",
+  authMiddleware,
+  validateBody(createReviewSchema),
+  reviewController.create,
+);
 
 // Product rating summary (public).
 router.get(
   "/product/:product_id/summary",
   validateParams(productIdParamSchema),
   reviewController.getSummary,
+);
+
+// Product rating summaries bulk (public).
+router.post(
+  "/product/summary/bulk",
+  validateBody(bulkProductSummarySchema),
+  reviewController.getBulkSummary,
 );
 
 // Product reviews listing with filters/sort/pagination (public).
@@ -34,8 +48,15 @@ router.get(
   reviewController.getByProduct,
 );
 
+// Admin: Get all reviews with filters/pagination (admin only).
+router.get("/admin", authMiddleware, adminOnly, reviewController.getAllAdmin);
+
 // Single review details (public).
-router.get("/:review_id", validateParams(reviewIdParamSchema), reviewController.getById);
+router.get(
+  "/:review_id",
+  validateParams(reviewIdParamSchema),
+  reviewController.getById,
+);
 
 // Update review (customer only, own review).
 router.put(
@@ -47,9 +68,12 @@ router.put(
 );
 
 // Hard delete review (customer own review or admin).
-router.delete("/deleteReview/:review_id", 
+router.delete(
+  "/deleteReview/:review_id",
   authMiddleware,
-validateParams(reviewIdParamSchema), reviewController.delete);
+  validateParams(reviewIdParamSchema),
+  reviewController.delete,
+);
 
 // Toggle helpful like/unlike (logged-in users).
 router.patch(

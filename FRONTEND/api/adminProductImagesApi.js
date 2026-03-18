@@ -55,6 +55,36 @@ export const fetchProductImages = async (productId) => {
 };
 
 /**
+ * Resolve the best image for a product selection using fallback priority.
+ * @param {Object} params
+ * @param {number|string} params.product_id
+ * @param {number|string|null} [params.product_portion_id]
+ * @param {number|string|null} [params.modifier_portion_id]
+ * @returns {Promise<Object|null>}
+ */
+export const fetchVariantProductImage = async ({
+  product_id,
+  product_portion_id,
+  modifier_portion_id,
+}) => {
+  const params = new URLSearchParams();
+
+  if (product_portion_id) {
+    params.append("product_portion_id", product_portion_id);
+  }
+
+  if (modifier_portion_id) {
+    params.append("modifier_portion_id", modifier_portion_id);
+  }
+
+  const query = params.toString();
+  const response = await api.get(
+    `/productImages/variant/${product_id}${query ? `?${query}` : ""}`,
+  );
+  return response.data?.data || null;
+};
+
+/**
  * Replace an existing image file.
  * @param {number} imageId
  * @param {File}   file

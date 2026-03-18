@@ -1,4 +1,6 @@
 import PaymentModel from "../models/payments.model.js";
+import { syncOrderPaymentStatus } from "../models/Order_master.model.js";
+import { getOrderById, updateOrderStatusWithTransition } from "../models/Order_master.model.js";
 import {
   ok,
   created,
@@ -39,6 +41,63 @@ const getStripeClient = () => {
   };
 };
 
+const canAccessOrder = (req, order) =>
+  Boolean(order) &&
+  (req.user?.role === "admin" || Number(order.user_id) === Number(req.user?.id));
+
+const canAccessPayment = async (req, payment) => {
+  if (!payment) {
+    return false;
+  }
+
+  const order = await getOrderById(payment.order_id);
+  return canAccessOrder(req, order);
+};
+
+const applyStripeSessionStatus = async (payment, session, actorId = null) => {
+  const paymentIntent = session?.payment_intent;
+  const paymentIntentId =
+    typeof paymentIntent === "string" ? paymentIntent : paymentIntent?.id;
+  const checkoutStatus = String(session?.payment_status || "").toLowerCase();
+  const gatewayResponse = {
+    stripe_checkout_session_id: session?.id || null,
+    stripe_payment_intent_id: paymentIntentId || null,
+    stripe_status: checkoutStatus || session?.status || null,
+    verified: checkoutStatus === "paid",
+  };
+
+  if (checkoutStatus === "paid") {
+    await PaymentModel.updateStatus(payment.payment_id, "completed");
+    await syncOrderPaymentStatus(payment.order_id, "completed", actorId);
+    await PaymentModel.updateGatewayResponse(payment.payment_id, gatewayResponse);
+    return {
+      ok: true,
+      status: "completed",
+      payment: await PaymentModel.findById(payment.payment_id),
+    };
+  }
+
+  if (["unpaid", "no_payment_required"].includes(checkoutStatus)) {
+    await PaymentModel.updateGatewayResponse(payment.payment_id, {
+      ...gatewayResponse,
+      verified: false,
+    });
+    return {
+      ok: false,
+      status: checkoutStatus || "processing",
+    };
+  }
+
+  await PaymentModel.updateGatewayResponse(payment.payment_id, {
+    ...gatewayResponse,
+    verified: false,
+  });
+  return {
+    ok: false,
+    status: checkoutStatus || "processing",
+  };
+};
+
 // /**
 //  * @module PaymentController
 //  * @description Handles HTTP requests for payment operations.
@@ -68,7 +127,7 @@ const PaymentController = {
       if (!order_id || !amount || !payment_method) {
         return badRequest(
           res,
-          "order_id, amount, and payment_method are required",
+          "Order, amount, and payment method are required.",
         );
       }
 
@@ -76,7 +135,7 @@ const PaymentController = {
       if (!["cash_on_delivery", "stripe"].includes(payment_method)) {
         return badRequest(
           res,
-          "Invalid payment method. Use: cash_on_delivery or stripe",
+          "Please choose a valid payment method.",
         );
       }
 
@@ -88,8 +147,13 @@ const PaymentController = {
       ) {
         return badRequest(
           res,
-          "Invalid order_id. It must be a positive integer within MySQL INT range.",
+          "We could not identify that order. Please refresh and try again.",
         );
+      }
+
+      const order = await getOrderById(parsedOrderId);
+      if (!canAccessOrder(req, order)) {
+        return notFound(res, "Order not found");
       }
 
       // //       // Validate amount
@@ -124,7 +188,7 @@ const PaymentController = {
       if (!success_url || !cancel_url) {
         return badRequest(
           res,
-          "success_url and cancel_url are required for Stripe checkout",
+          "Stripe checkout could not start because the return URLs are missing.",
         );
       }
 
@@ -186,17 +250,20 @@ const PaymentController = {
   //    */
   async verifyPayment(req, res) {
     try {
-      const { payment_intent_id } = req.body;
+      const { payment_intent_id, session_id } = req.body;
 
-      //       // Validate required fields
-      if (!payment_intent_id) {
-        return badRequest(res, "payment_intent_id is required");
+      if (!payment_intent_id && !session_id) {
+        return badRequest(res, "session_id or payment_intent_id is required");
       }
 
-      //       // Find payment record by Stripe PaymentIntent ID
-      const payment = await PaymentModel.findByTransactionId(payment_intent_id);
+      const lookupTransactionId = session_id || payment_intent_id;
+      const payment = await PaymentModel.findByTransactionId(lookupTransactionId);
 
       if (!payment) {
+        return notFound(res, "Payment record not found");
+      }
+
+      if (!(await canAccessPayment(req, payment))) {
         return notFound(res, "Payment record not found");
       }
 
@@ -205,13 +272,33 @@ const PaymentController = {
         return badRequest(res, stripeError);
       }
 
-      //       // Retrieve the PaymentIntent from Stripe to check its actual status
-      const paymentIntent =
-        await stripe.paymentIntents.retrieve(payment_intent_id);
+      if (session_id) {
+        const session = await stripe.checkout.sessions.retrieve(session_id, {
+          expand: ["payment_intent"],
+        });
+
+        const result = await applyStripeSessionStatus(
+          payment,
+          session,
+          req.user?.id,
+        );
+
+        if (result.ok) {
+          return ok(res, "Payment verified successfully", result.payment);
+        }
+
+        return badRequest(
+          res,
+          "We could not confirm the payment yet. Please wait a moment and check again.",
+        );
+      }
+
+      const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
 
       if (paymentIntent.status === "succeeded") {
         //         // Payment succeeded - mark as completed
         await PaymentModel.updateStatus(payment.payment_id, "completed");
+        await syncOrderPaymentStatus(payment.order_id, "completed", req.user?.id);
         await PaymentModel.updateGatewayResponse(payment.payment_id, {
           stripe_payment_intent_id: paymentIntent.id,
           stripe_payment_method: paymentIntent.payment_method,
@@ -229,6 +316,7 @@ const PaymentController = {
       ) {
         //         // Payment failed
         await PaymentModel.updateStatus(payment.payment_id, "failed");
+        await syncOrderPaymentStatus(payment.order_id, "failed", req.user?.id);
         await PaymentModel.updateGatewayResponse(payment.payment_id, {
           stripe_payment_intent_id: paymentIntent.id,
           stripe_status: paymentIntent.status,
@@ -238,7 +326,7 @@ const PaymentController = {
 
         return badRequest(
           res,
-          `Payment verification failed. Status: ${paymentIntent.status}`,
+          "We could not confirm the payment. Please try again or use another payment method.",
         );
       }
 
@@ -251,7 +339,7 @@ const PaymentController = {
 
       return ok(
         res,
-        `Payment is still in progress. Status: ${paymentIntent.status}`,
+        "Your payment is still being processed.",
         {
           status: paymentIntent.status,
           requires_action: paymentIntent.status === "requires_action",
@@ -272,7 +360,7 @@ const PaymentController = {
       const { id } = req.params;
       const payment = await PaymentModel.findById(parseInt(id));
 
-      if (!payment) {
+      if (!payment || !(await canAccessPayment(req, payment))) {
         return notFound(res, "Payment not found");
       }
 
@@ -290,6 +378,12 @@ const PaymentController = {
   async getPaymentsByOrder(req, res) {
     try {
       const { orderId } = req.params;
+      const order = await getOrderById(parseInt(orderId, 10));
+
+      if (!canAccessOrder(req, order)) {
+        return notFound(res, "Payments not found");
+      }
+
       const payments = await PaymentModel.findByOrderId(parseInt(orderId));
 
       return ok(res, "Payments fetched successfully", payments);
@@ -348,7 +442,7 @@ const PaymentController = {
         if (!gatewayData.stripe_payment_intent_id) {
           return badRequest(
             res,
-            "Stripe PaymentIntent ID not found. Cannot process refund.",
+            "We could not start the refund for this payment.",
           );
         }
 
@@ -362,6 +456,7 @@ const PaymentController = {
         });
 
         await PaymentModel.processRefund(payment.payment_id, refundAmount);
+        await syncOrderPaymentStatus(payment.order_id, "refunded", req.user?.id);
         await PaymentModel.updateGatewayResponse(payment.payment_id, {
           ...gatewayData,
           refund_id: refund.id,
@@ -373,6 +468,7 @@ const PaymentController = {
       // COD refund (just mark it)
       if (payment.payment_method === "cash_on_delivery") {
         await PaymentModel.processRefund(payment.payment_id, refundAmount);
+        await syncOrderPaymentStatus(payment.order_id, "refunded", req.user?.id);
       }
 
       const updatedPayment = await PaymentModel.findById(payment.payment_id);
@@ -410,12 +506,58 @@ const PaymentController = {
       }
 
       await PaymentModel.completeCODPayment(payment.payment_id);
+      await syncOrderPaymentStatus(payment.order_id, "completed", req.user?.id);
       const updatedPayment = await PaymentModel.findById(payment.payment_id);
 
       return ok(res, "COD payment marked as completed", updatedPayment);
     } catch (error) {
       console.error("Complete COD error:", error);
       return serverError(res, "Internal server error");
+    }
+  },
+
+  async cancelStripeCheckout(req, res) {
+    try {
+      const { session_id } = req.body;
+
+      if (!session_id) {
+        return badRequest(res, "session_id is required");
+      }
+
+      const payment = await PaymentModel.findByTransactionId(session_id);
+      if (!payment || !(await canAccessPayment(req, payment))) {
+        return notFound(res, "Payment not found");
+      }
+
+      if (["completed", "refunded"].includes(String(payment.status).toLowerCase())) {
+        return badRequest(res, "This payment can no longer be cancelled");
+      }
+
+      await PaymentModel.updateStatus(payment.payment_id, "failed");
+      await syncOrderPaymentStatus(payment.order_id, "failed", req.user?.id);
+
+      const order = await getOrderById(payment.order_id);
+      if (order && String(order.order_status).toLowerCase() === "pending") {
+        await updateOrderStatusWithTransition(
+          payment.order_id,
+          "cancelled",
+          req.user?.id,
+          req.user?.role === "admin" ? null : req.user?.id,
+        );
+      }
+
+      await PaymentModel.updateGatewayResponse(payment.payment_id, {
+        stripe_checkout_session_id: session_id,
+        stripe_status: "cancelled",
+        verified: false,
+      });
+
+      return ok(res, "Stripe checkout cancelled successfully", {
+        payment: await PaymentModel.findById(payment.payment_id),
+      });
+    } catch (error) {
+      console.error("Cancel Stripe checkout error:", error);
+      return serverError(res, "Failed to cancel Stripe checkout");
     }
   },
 
@@ -445,21 +587,36 @@ const PaymentController = {
     }
 
     switch (event.type) {
-      case "payment_intent.succeeded": {
-        const paymentIntent = event.data.object;
-        const payment = await PaymentModel.findByTransactionId(
-          paymentIntent.id,
-        );
+      case "checkout.session.completed": {
+        const session = event.data.object;
+        const payment = await PaymentModel.findByTransactionId(session.id);
         if (payment && payment.status !== "completed") {
-          await PaymentModel.updateStatus(payment.payment_id, "completed");
+          await applyStripeSessionStatus(payment, session);
+        }
+        break;
+      }
+
+      case "checkout.session.expired": {
+        const session = event.data.object;
+        const payment = await PaymentModel.findByTransactionId(session.id);
+        if (payment && !["completed", "failed", "refunded"].includes(payment.status)) {
+          await PaymentModel.updateStatus(payment.payment_id, "failed");
+          await syncOrderPaymentStatus(payment.order_id, "failed");
           await PaymentModel.updateGatewayResponse(payment.payment_id, {
-            stripe_payment_intent_id: paymentIntent.id,
-            stripe_payment_method: paymentIntent.payment_method,
-            stripe_status: paymentIntent.status,
-            verified: true,
+            stripe_checkout_session_id: session.id,
+            stripe_status: "expired",
+            verified: false,
             webhook_event_id: event.id,
           });
         }
+        break;
+      }
+
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object;
+        console.log(
+          `payment_intent.succeeded received for ${paymentIntent.id}; checkout.session.completed will finalize order state.`,
+        );
         break;
       }
 
@@ -470,6 +627,7 @@ const PaymentController = {
         );
         if (payment && payment.status !== "failed") {
           await PaymentModel.updateStatus(payment.payment_id, "failed");
+          await syncOrderPaymentStatus(payment.order_id, "failed");
           await PaymentModel.updateGatewayResponse(payment.payment_id, {
             stripe_payment_intent_id: paymentIntent.id,
             stripe_status: paymentIntent.status,

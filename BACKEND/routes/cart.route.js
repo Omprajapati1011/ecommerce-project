@@ -5,25 +5,26 @@ import {
   addItemToCart,
   updateCartItem,
   removeCartItem,
+  clearCart,
   applyCartOffer,
   removeCartOffer,
   applyCartItemOffer,
   removeCartItemOffer,
-  getApplicableOffers
+  getApplicableOffers,
 } from "../controllers/cart.controller.js";
 
 import { auth } from "../middlewares/auth.middleware.js";
 
-import { validateCart, validateCartItemOwnership } from "../middlewares/cart.middleware.js";
-
+import {
+  validateCart,
+  validateCartItemOwnership,
+} from "../middlewares/cart.middleware.js";
 
 const router = express.Router();
-
 
 // All cart routes require authentication
 
 // User ID is extracted from JWT token instead of URL parameter
-
 
 /** 
 
@@ -36,7 +37,6 @@ const router = express.Router();
  */
 
 router.get("/", auth, validateCart, getCart);
-
 
 /** 
 
@@ -52,7 +52,6 @@ router.get("/", auth, validateCart, getCart);
 
 router.post("/items", auth, validateCart, addItemToCart);
 
-
 /** 
 
  * Update quantity for a specific cart item (0 = remove)
@@ -65,10 +64,15 @@ router.post("/items", auth, validateCart, addItemToCart);
 
  */
 
-router.patch("/items/:cartItemId", auth, validateCart, validateCartItemOwnership, updateCartItem);
+router.patch(
+  "/items/:cartItemId",
+  auth,
+  validateCart,
+  validateCartItemOwnership,
+  updateCartItem,
+);
 
-
-/** 
+/**
 
  * Remove a cart item
 
@@ -78,8 +82,15 @@ router.patch("/items/:cartItemId", auth, validateCart, validateCartItemOwnership
 
  */
 
-router.delete("/items/:cartItemId", auth, validateCart, validateCartItemOwnership, removeCartItem);
+router.delete("/items", auth, validateCart, clearCart);
 
+router.delete(
+  "/items/:cartItemId",
+  auth,
+  validateCart,
+  validateCartItemOwnership,
+  removeCartItem,
+);
 
 // ============================================================================
 // OFFER ROUTES
@@ -113,13 +124,25 @@ router.delete("/offer", auth, validateCart, removeCartOffer);
  * Headers: Authorization: Bearer <token>
  * Body: { offer_id }
  */
-router.post("/items/:cartItemId/offer", auth, validateCart, validateCartItemOwnership, applyCartItemOffer);
+router.post(
+  "/items/:cartItemId/offer",
+  auth,
+  validateCart,
+  validateCartItemOwnership,
+  applyCartItemOffer,
+);
 
 /**
  * Remove offer from cart item
  * DELETE /api/cart/items/:cartItemId/offer
  * Headers: Authorization: Bearer <token>
  */
-router.delete("/items/:cartItemId/offer", auth, validateCart, validateCartItemOwnership, removeCartItemOffer);
+router.delete(
+  "/items/:cartItemId/offer",
+  auth,
+  validateCart,
+  validateCartItemOwnership,
+  removeCartItemOffer,
+);
 
 export default router;

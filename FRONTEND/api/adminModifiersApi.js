@@ -124,3 +124,30 @@ export const deleteModifierPortion = async (id) => {
   const response = await api.delete(`/modifiers/portions/${id}`);
   return response.data;
 };
+
+// ===== Modifier Combinations =====
+
+export const fetchCombinationsByPortion = async (productPortionId) => {
+  const response = await api.get(`/modifiers/combinations/by-portion/${productPortionId}`);
+  return response.data?.data || [];
+};
+
+export const fetchCombinationsByProduct = async (productId) => {
+  const response = await api.get(`/modifiers/combinations/by-product/${productId}`);
+  return response.data?.data || [];
+};
+
+export const createCombination = async (data) => {
+  const response = await api.post("/modifiers/combinations", data);
+  return response.data;
+};
+
+export const updateCombination = async (id, data) => {
+  const response = await api.put(`/modifiers/combinations/${id}`, data);
+  return response.data;
+};
+
+export const deleteCombination = async (id) => {
+  const response = await api.delete(`/modifiers/combinations/${id}`);
+  return response.data;
+};

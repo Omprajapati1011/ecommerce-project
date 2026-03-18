@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
+import "../configs/env.js";
 import {
   badRequest,
   conflict,
@@ -10,7 +10,9 @@ import {
   serverError,
 } from "../utils/apiResponse.js";
 import {
+  getAllReviewsAdmin,
   getProductRatingSummary,
+  getProductRatingSummariesBulk,
   getReviewById,
   getReviewsByProduct,
   hardDeleteReview,
@@ -18,8 +20,6 @@ import {
   toggleHelpful,
   updateReview,
 } from "../models/review.model.js";
-
-dotenv.config();
 
 // Normalize user id from JWT payload formats.
 const resolveAuthUserId = (req) => {
@@ -193,6 +193,23 @@ export const reviewController = {
     }
   },
 
+  // POST /api/review/product/summary/bulk
+  getBulkSummary: async (req, res) => {
+    try {
+      const { product_ids } = req.validatedBody ?? req.body;
+      const summaries = await getProductRatingSummariesBulk(product_ids);
+
+      return success(
+        res,
+        "Product rating summaries fetched successfully",
+        summaries,
+      );
+    } catch (error) {
+      console.error("Get review summaries bulk error:", error);
+      return serverError(res, "Internal server error");
+    }
+  },
+
   // GET /api/review/:review_id
   getById: async (req, res) => {
     try {
@@ -293,6 +310,34 @@ export const reviewController = {
       return success(res, "Review deleted successfully");
     } catch (error) {
       console.error("Delete review error:", error);
+      return serverError(res, "Internal server error");
+    }
+  },
+
+  // GET /api/review/admin (admin only)
+  getAllAdmin: async (req, res) => {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        rating,
+        sortField = "created_at",
+        sortOrder = "desc",
+      } = req.query;
+
+      const data = await getAllReviewsAdmin({
+        page,
+        limit,
+        search,
+        rating: rating ? Number(rating) : null,
+        sortField,
+        sortOrder,
+      });
+
+      return success(res, "Reviews fetched successfully", data);
+    } catch (error) {
+      console.error("Get admin reviews error:", error);
       return serverError(res, "Internal server error");
     }
   },

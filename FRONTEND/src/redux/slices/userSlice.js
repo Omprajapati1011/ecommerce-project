@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../../api/api";
+import getApiErrorMessage from "../../utils/apiError";
 
 // ===============================
 // FETCH ALL USERS
@@ -37,7 +38,7 @@ export const fetchAllUsers = createAsyncThunk(
 
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Server error"
+        getApiErrorMessage(error, "We could not load the users right now."),
       );
     }
   }
@@ -50,7 +51,9 @@ export const fetchUserProfileById = createAsyncThunk(
       const response = await api.get(`/users/view-user/${userId}`);
       return response.data.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Server error");
+      return rejectWithValue(
+        getApiErrorMessage(error, "We could not load this user profile."),
+      );
     }
   },
 );
@@ -62,7 +65,9 @@ export const blockUserByAdmin = createAsyncThunk(
       await api.patch(`/users/block/${userId}`);
       return userId;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Server error");
+      return rejectWithValue(
+        getApiErrorMessage(error, "We could not update this user right now."),
+      );
     }
   },
 );
@@ -74,7 +79,9 @@ export const unblockUserByAdmin = createAsyncThunk(
       await api.patch(`/users/unblock/${userId}`);
       return userId;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Server error");
+      return rejectWithValue(
+        getApiErrorMessage(error, "We could not update this user right now."),
+      );
     }
   },
 );
@@ -86,7 +93,9 @@ export const deleteUserByAdmin = createAsyncThunk(
       await api.delete(`/users/delete/${userId}`);
       return userId;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Server error");
+      return rejectWithValue(
+        getApiErrorMessage(error, "We could not delete this user right now."),
+      );
     }
   },
 );
@@ -98,7 +107,9 @@ export const createUserByAdmin = createAsyncThunk(
       const response = await api.post("/users/admin/create", payload);
       return response.data?.data || null;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Server error");
+      return rejectWithValue(
+        getApiErrorMessage(error, "We could not create the user right now."),
+      );
     }
   },
 );

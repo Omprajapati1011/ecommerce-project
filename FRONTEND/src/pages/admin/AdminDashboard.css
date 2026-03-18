@@ -46,3 +46,37 @@
 .admin-dashboard-grid {
   transition: grid-template-columns 300ms ease-in-out;
 }
+
+/* ===== Admin tab content scrollbar — themed ===== */
+
+/* Webkit (Chrome, Edge, Safari) */
+.admin-tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-tab-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-tab-content::-webkit-scrollbar-thumb {
+  background: rgba(201, 184, 138, 0.3);
+  border-radius: 3px;
+}
+.admin-tab-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 184, 138, 0.5);
+}
+
+/* Dark mode */
+.dark .admin-tab-content::-webkit-scrollbar-thumb {
+  background: rgba(201, 184, 138, 0.15);
+}
+.dark .admin-tab-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 184, 138, 0.3);
+}
+
+/* Firefox */
+.admin-tab-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 184, 138, 0.3) transparent;
+}
+.dark .admin-tab-content {
+  scrollbar-color: rgba(201, 184, 138, 0.15) transparent;
+}

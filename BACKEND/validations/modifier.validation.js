@@ -16,6 +16,11 @@ export const createModifierSchema = z.object({
     .string()
     .min(1, "Modifier value is required")
     .max(100, "Modifier value cannot exceed 100 characters"),
+  modifier_type: z
+    .string()
+    .max(50, "Modifier type cannot exceed 50 characters")
+    .optional()
+    .nullable(),
   additional_price: z.number().min(0, "Price cannot be negative").optional(),
 });
 
@@ -31,6 +36,11 @@ export const updateModifierSchema = z.object({
     .min(1, "Modifier value is required")
     .max(100, "Modifier value cannot exceed 100 characters")
     .optional(),
+  modifier_type: z
+    .string()
+    .max(50, "Modifier type cannot exceed 50 characters")
+    .optional()
+    .nullable(),
   additional_price: z.number().min(0, "Price cannot be negative").optional(),
   is_active: z.boolean().optional(),
 });

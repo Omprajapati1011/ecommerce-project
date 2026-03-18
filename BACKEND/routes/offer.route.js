@@ -9,7 +9,10 @@ import {
   deleteOfferByIdController,
   getActiveOfferController,
   getAllOfferController,
+  getOfferByCategoryIdController,
   getOfferByIdController,
+  getOfferByProductIdController,
+  getVisibleOffersByProductIdController,
   updateOfferByIdController,
   updateOfferStatusController,
   validateOfferController,
@@ -20,9 +23,11 @@ import {
 import {
   validateCreateOffer,
   validateCreateOfferProductCategory,
+  validateCategoryIdParam,
   validateOfferProductCategoryIdParam,
   validateOfferProductCategoryOfferIdParam,
   validateOfferIdParam,
+  validateProductIdParam,
   validateUserIdParam,
   validateOfferPayload,
   validateUpdateOfferProductCategory,
@@ -214,6 +219,39 @@ route.get(
   adminOnly,
   validateUserIdParam,
   getOfferUsageByUserIdController,
+);
+
+/**
+ * GET api/offer/product/:id
+ * Fetch active offers for a given product id
+ */
+route.get(
+  "/product/:id",
+  auth,
+  validateProductIdParam,
+  getOfferByProductIdController,
+);
+
+/**
+ * GET api/offer/product/:id/visible
+ * Fetch both product and category offers visible for a given product id
+ */
+route.get(
+  "/product/:id/visible",
+  auth,
+  validateProductIdParam,
+  getVisibleOffersByProductIdController,
+);
+
+/**
+ * GET api/offer/category/:id
+ * Fetch active offers for a given category id
+ */
+route.get(
+  "/category/:id",
+  auth,
+  validateCategoryIdParam,
+  getOfferByCategoryIdController,
 );
 
 // /**

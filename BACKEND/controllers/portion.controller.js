@@ -15,14 +15,13 @@ import {
   deleteProductPortion,
 } from "../models/portion.model.js";
 
-
 import {
   created,
   ok,
   notFound,
   conflict,
   badRequest,
-  serverError
+  serverError,
 } from "../utils/apiResponse.js";
 
 // Controller for creating new portion
@@ -43,7 +42,7 @@ export const createPortionController = {
         portion_value,
         description: description ?? null,
         is_active: is_active !== undefined ? is_active : 1,
-        created_by: req.user?.user_id || 1, // From auth middleware
+        created_by: req.user?.id || 1,
       };
 
       const result = await createPortion.create(portionData);
@@ -95,7 +94,7 @@ export const updatePortionController = async (req, res) => {
     const { portion_id } = req.validatedParams ?? req.params;
     const { portion_value, description, is_active } =
       req.validatedBody ?? req.body;
-    const updated_by = req.user?.user_id || 1;
+    const updated_by = req.user?.id || 1;
 
     const result = await updatePortion(
       portion_id,
@@ -111,7 +110,7 @@ export const updatePortionController = async (req, res) => {
 
     return ok(res, "Portion updated successfully");
   } catch (error) {
-    console.log("updated portion error", error);
+    console.error("updated portion error", error);
     return serverError(res, "Internal server error for UpdatePortionById");
   }
 };
@@ -119,10 +118,8 @@ export const updatePortionController = async (req, res) => {
 // Controller for toggling portion active status
 export const toggleActivePortionController = async (req, res) => {
   try {
-    const portion_id = Number(
-      (req.validatedParams ?? req.params).portion_id,
-    );
-    const updated_by = req.user?.user_id || 1;
+    const portion_id = Number((req.validatedParams ?? req.params).portion_id);
+    const updated_by = req.user?.id || 1;
 
     const result = await toggleActivePortion(portion_id, updated_by);
 
@@ -132,7 +129,7 @@ export const toggleActivePortionController = async (req, res) => {
 
     return ok(res, "Portion active status toggled successfully");
   } catch (error) {
-    console.log("toggle portion error", error);
+    console.error("toggle portion error", error);
     return serverError(res, "Internal server error");
   }
 };
@@ -141,7 +138,7 @@ export const toggleActivePortionController = async (req, res) => {
 export const deletePortionController = async (req, res) => {
   try {
     const { portion_id } = req.validatedParams ?? req.params;
-    const updated_by = req.user?.user_id || 1;
+    const updated_by = req.user?.id || 1;
 
     const result = await deletePortion(portion_id, updated_by);
 
@@ -151,18 +148,12 @@ export const deletePortionController = async (req, res) => {
 
     return ok(res, "Portion soft delete successfully");
   } catch (error) {
-    console.log("delete portion error", error);
+    console.error("delete portion error", error);
     return serverError(res, "Internal server error for DeleteById");
   }
 };
 
-
-
 // for the product master table
-
-
-
-
 
 //  Assign portion to product
 export const createProductPortionController = async (req, res) => {
@@ -177,13 +168,15 @@ export const createProductPortionController = async (req, res) => {
     } = req.validatedBody ?? req.body;
 
     // Check if product exists
-    const productExists = await AssignPortionTOProduct.checkProductExists(product_id);
+    const productExists =
+      await AssignPortionTOProduct.checkProductExists(product_id);
     if (!productExists) {
       return notFound(res, "Product not found");
     }
 
     // Check if portion exists
-    const portionExists = await AssignPortionTOProduct.checkPortionExists(portion_id);
+    const portionExists =
+      await AssignPortionTOProduct.checkPortionExists(portion_id);
     if (!portionExists) {
       return notFound(res, "Portion not found");
     }
@@ -191,7 +184,7 @@ export const createProductPortionController = async (req, res) => {
     // Check duplicate combination
     const isDuplicate = await AssignPortionTOProduct.checkProductPortionExists(
       product_id,
-      portion_id
+      portion_id,
     );
     if (isDuplicate) {
       return conflict(res, "This portion is already assigned to the product");
@@ -205,19 +198,17 @@ export const createProductPortionController = async (req, res) => {
       discounted_price: discounted_price ?? null,
       stock: stock ?? 0,
       is_active: is_active !== undefined ? is_active : 1,
-      created_by: req.user?.user_id || 1,
+      created_by: req.user?.id || 1,
     };
 
     const result = await AssignPortionTOProduct.create(portionData);
 
     return created(res, "Product portion created successfully", result);
-
   } catch (error) {
     console.error("Create product portion error:", error);
     return serverError(res, "Internal server error");
   }
 };
-
 
 // Get all portions of a product
 export const getProductPortionsController = async (req, res) => {
@@ -225,7 +216,8 @@ export const getProductPortionsController = async (req, res) => {
     const { product_id } = req.validatedParams ?? req.params;
 
     // Check if product exists
-    const productExists = await AssignPortionTOProduct.checkProductExists(product_id);
+    const productExists =
+      await AssignPortionTOProduct.checkProductExists(product_id);
     if (!productExists) {
       return notFound(res, "Product not found");
     }
@@ -233,13 +225,11 @@ export const getProductPortionsController = async (req, res) => {
     const portions = await getProductPortions(product_id);
 
     return ok(res, "Product portions fetched successfully", portions);
-
   } catch (error) {
     console.error("Get product portions error:", error);
     return serverError(res, "Internal server error");
   }
 };
-
 
 // Get single product portion
 export const getProductPortionByIdController = async (req, res) => {
@@ -256,14 +246,11 @@ export const getProductPortionByIdController = async (req, res) => {
     }
 
     return ok(res, "Product portion fetched successfully", productPortion);
-
   } catch (error) {
     console.error("Get product portion error:", error);
     return serverError(res, "Internal server error");
   }
 };
-
-
 
 // Get all product portions (admin)
 export const getAllProductPortionsController = async (req, res) => {
@@ -271,13 +258,11 @@ export const getAllProductPortionsController = async (req, res) => {
     const portions = await getAllProductPortions();
 
     return ok(res, "All product portions fetched successfully", portions);
-
   } catch (error) {
     console.error("Get all product portions error:", error);
     return serverError(res, "Internal server error");
   }
 };
-
 
 //  Update product portion
 export const updateProductPortionController = async (req, res) => {
@@ -296,26 +281,37 @@ export const updateProductPortionController = async (req, res) => {
 
     // Prepare update data
     const updateData = {};
-    
+
     if (price !== undefined) updateData.price = price;
-    if (discounted_price !== undefined) updateData.discounted_price = discounted_price;
+    if (discounted_price !== undefined)
+      updateData.discounted_price = discounted_price;
     if (stock !== undefined) updateData.stock = stock;
     if (is_active !== undefined) updateData.is_active = is_active;
 
     // Check if there's anything to update
     if (Object.keys(updateData).length === 0) {
-      return badRequest(res, "Nothing to update, please provide at least one field");
+      return badRequest(
+        res,
+        "Nothing to update, please provide at least one field",
+      );
     }
 
-    const updated_by = req.user?.user_id ?? 1;
+    const updated_by = req.user?.id ?? 1;
 
     // Update with error handling
     try {
-      const result = await updateProductPortion(product_portion_id, updateData, updated_by);
+      const result = await updateProductPortion(
+        product_portion_id,
+        updateData,
+        updated_by,
+      );
       return ok(res, "Product portion updated successfully", result);
     } catch (error) {
       if (error.message === "INVALID_DISCOUNT") {
-        return badRequest(res, "Discounted price must be less than regular price");
+        return badRequest(
+          res,
+          "Discounted price must be less than regular price",
+        );
       }
       if (error.message === "INVALID_STOCK") {
         return badRequest(res, "Stock cannot be negative");
@@ -325,21 +321,22 @@ export const updateProductPortionController = async (req, res) => {
       }
       throw error; // Re-throw unknown errors
     }
-
   } catch (error) {
     console.error("Update product portion error:", error);
     return serverError(res, "Internal server error");
   }
 };
 
-
 // Controller for toggling product_portion active status
 export const toggleActiveProductPortionController = async (req, res) => {
   try {
     const { product_portion_id } = req.validatedParams ?? req.params;
-    const updated_by = req.user?.user_id || 1;
+    const updated_by = req.user?.id || 1;
 
-    const result = await toggleActiveProductPortion(product_portion_id, updated_by);
+    const result = await toggleActiveProductPortion(
+      product_portion_id,
+      updated_by,
+    );
 
     if (!result) {
       return notFound(res, "product_portion not found or already deleted");
@@ -347,11 +344,10 @@ export const toggleActiveProductPortionController = async (req, res) => {
 
     return ok(res, "product_portion active status toggled successfully");
   } catch (error) {
-    console.log("toggle product_portion error", error);
+    console.error("toggle product_portion error", error);
     return serverError(res, "Internal server error");
   }
 };
-
 
 // Controller for deleting product_portion (soft delete)
 export const deleteProductPortionController = async (req, res) => {
@@ -359,7 +355,7 @@ export const deleteProductPortionController = async (req, res) => {
     const product_portion_id = Number(
       (req.validatedParams ?? req.params).product_portion_id,
     );
-    const updated_by = req.user?.user_id || 1;
+    const updated_by = req.user?.id || 1;
 
     const result = await deleteProductPortion(product_portion_id, updated_by);
 
@@ -369,21 +365,7 @@ export const deleteProductPortionController = async (req, res) => {
 
     return ok(res, "product_portion soft delete successfully");
   } catch (error) {
-    console.log("delete product_portion error", error);
+    console.error("delete product_portion error", error);
     return serverError(res, "Internal server error for DeleteById");
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-

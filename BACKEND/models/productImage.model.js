@@ -27,10 +27,14 @@ export const findProductPortion = async (productPortionId, productId) => {
 export const findModifierPortion = async (modifierPortionId) => {
   const [rows] = await db.execute(
     `
-      SELECT mp.modifier_portion_id, mp.product_portion_id, pp.product_id
+      SELECT
+        mp.modifier_portion_id,
+        mp.product_portion_id,
+        COALESCE(mp.product_id, pp.product_id) AS product_id
       FROM modifier_portion mp
-      INNER JOIN product_portion pp ON pp.product_portion_id = mp.product_portion_id
+      LEFT JOIN product_portion pp ON pp.product_portion_id = mp.product_portion_id
       WHERE mp.modifier_portion_id = ?
+        AND mp.is_deleted = 0
       LIMIT 1
     `,
     [modifierPortionId],

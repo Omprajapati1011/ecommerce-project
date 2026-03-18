@@ -97,13 +97,12 @@ const Product = {
     `);
     const { totalAll, totalActive } = statsRows[0];
 
-    const conditions = ["p.is_deleted = 0"];
+    const conditions = ["p.is_deleted = 0", "(p.category_id IS NULL OR c.category_id IS NOT NULL)"];
     const values = [];
 
     let baseSql = `
       FROM product_master p
-      LEFT JOIN category_master c ON p.category_id = c.category_id
-      LEFT JOIN product_images pi ON pi.product_id = p.product_id AND pi.is_primary = 1 AND pi.image_level = 'PRODUCT' AND pi.is_deleted = 0
+      LEFT JOIN category_master c ON p.category_id = c.category_id AND c.is_deleted = 0
       LEFT JOIN (
         SELECT pp.product_id,
                COUNT(*) AS portion_count,
@@ -118,18 +117,49 @@ const Product = {
         GROUP BY pp.product_id
       ) ptc ON p.product_id = ptc.product_id
       LEFT JOIN (
-        SELECT pp2.product_id,
-               COUNT(DISTINCT mp.modifier_id) AS modifier_count,
-               GROUP_CONCAT(DISTINCT CONCAT(mm.modifier_name, ': ', mm.modifier_value) ORDER BY mm.modifier_name SEPARATOR ', ') AS modifier_values,
+        SELECT product_id,
+               COUNT(*) AS modifier_count,
+               GROUP_CONCAT(label ORDER BY ppId, label SEPARATOR ', ') AS modifier_values,
                GROUP_CONCAT(
-                 CONCAT(pp2.product_portion_id, '@@', mm.modifier_name, ': ', mm.modifier_value, '||', COALESCE(mp.additional_price, 0), '||', mp.stock)
-                 ORDER BY pp2.product_portion_id, mm.modifier_name SEPARATOR ';;'
+                 CONCAT(ppId, '@@', id, '@@', label, '||', price, '||', stock, '||', img)
+                 ORDER BY ppId, label SEPARATOR ';;'
                ) AS modifier_details
-        FROM product_portion pp2
-        JOIN modifier_portion mp ON mp.product_portion_id = pp2.product_portion_id AND mp.is_deleted = 0
-        JOIN modifier_master mm ON mm.modifier_id = mp.modifier_id AND mm.is_deleted = 0
-        WHERE pp2.is_deleted = 0
-        GROUP BY pp2.product_id
+        FROM (
+          -- Raw Modifiers
+          SELECT COALESCE(mp.product_id, pp2.product_id) AS product_id,
+                 COALESCE(pp2.product_portion_id, 0) AS ppId,
+                 mp.modifier_portion_id AS id,
+                 CONCAT(mm.modifier_name, ': ', mm.modifier_value) AS label,
+                 COALESCE(mp.additional_price, 0) AS price,
+                 mp.stock,
+                 COALESCE((
+                   SELECT pi.image_url
+                   FROM product_images pi
+                   WHERE pi.modifier_portion_id = mp.modifier_portion_id
+                     AND pi.image_level = 'MODIFIER'
+                     AND pi.is_deleted = 0
+                   ORDER BY pi.is_primary DESC, pi.image_id DESC
+                   LIMIT 1
+                 ), '') AS img
+          FROM modifier_portion mp
+          LEFT JOIN product_portion pp2 ON pp2.product_portion_id = mp.product_portion_id AND pp2.is_deleted = 0
+          JOIN modifier_master mm ON mm.modifier_id = mp.modifier_id AND mm.is_deleted = 0
+          WHERE mp.is_deleted = 0
+          
+          UNION ALL
+          
+          -- Combinations
+          SELECT mc_inner.product_id,
+                 COALESCE(mc_inner.product_portion_id, 0) AS ppId,
+                 mc_inner.combination_id AS id,
+                 mc_inner.name AS label,
+                 COALESCE(mc_inner.additional_price, 0) AS price,
+                 mc_inner.stock,
+                 '' AS img
+          FROM modifier_combination mc_inner
+          WHERE mc_inner.is_deleted = 0
+        ) combined_mods
+        GROUP BY product_id
       ) mc ON p.product_id = mc.product_id
     `;
 
@@ -156,8 +186,33 @@ const Product = {
 
     // Search by name or display name
     if (filters.search) {
-      conditions.push("(p.name LIKE ? OR p.display_name LIKE ?)");
-      values.push(`%${filters.search}%`, `%${filters.search}%`);
+      const normalizedSearch = String(filters.search)
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .replace(/\s+/g, "");
+
+      const like = `%${normalizedSearch}%`;
+      conditions.push(`(
+        LOWER(REPLACE(COALESCE(p.name, ''), ' ', '')) LIKE ?
+        OR LOWER(REPLACE(COALESCE(p.display_name, ''), ' ', '')) LIKE ?
+        OR LOWER(REPLACE(COALESCE(p.description, ''), ' ', '')) LIKE ?
+        OR LOWER(REPLACE(COALESCE(c.category_name, ''), ' ', '')) LIKE ?
+        OR p.category_id IN (
+          SELECT child.category_id FROM category_master child
+          WHERE child.parent_id IN (
+            SELECT anc.category_id FROM category_master anc
+            WHERE LOWER(REPLACE(COALESCE(anc.category_name, ''), ' ', '')) LIKE ?
+          )
+          UNION
+          SELECT gc.category_id FROM category_master gc
+          INNER JOIN category_master mid ON gc.parent_id = mid.category_id
+          WHERE mid.parent_id IN (
+            SELECT anc2.category_id FROM category_master anc2
+            WHERE LOWER(REPLACE(COALESCE(anc2.category_name, ''), ' ', '')) LIKE ?
+          )
+        )
+      )`);
+      values.push(like, like, like, like, like, like);
     }
 
     // Status filter
@@ -189,6 +244,7 @@ const Product = {
       price: "p.price",
       stock: "p.stock",
       is_active: "p.is_active",
+      created_at: "p.created_at",
     };
 
     let orderClause = "ORDER BY p.product_id ASC";
@@ -198,23 +254,26 @@ const Product = {
     }
 
     const dataSql = `
-      SELECT DISTINCT p.*, c.category_name, pi.image_url,
+      SELECT DISTINCT p.*, c.category_name,
              COALESCE(ptc.portion_count, 0) AS portion_count,
              ptc.portion_values,
              ptc.portion_details,
              COALESCE(mc.modifier_count, 0) AS modifier_count,
              mc.modifier_values,
-             mc.modifier_details
+             mc.modifier_details,
+             (SELECT pi.image_url FROM product_images pi
+              WHERE pi.product_id = p.product_id
+                AND pi.image_level = 'PRODUCT'
+                AND pi.is_deleted = 0
+              ORDER BY pi.is_primary DESC, pi.image_id DESC
+              LIMIT 1) AS image_url
       ${baseSql}
       ${whereClause}
       ${orderClause}
       LIMIT ${limit} OFFSET ${offset}
     `;
 
-    const [dataRows] = await conn.execute(
-      dataSql,
-      values
-    );
+    const [dataRows] = await conn.execute(dataSql, values);
 
     return { total, data: dataRows, totalAll, totalActive };
   },
@@ -222,9 +281,15 @@ const Product = {
   findById: (id) => {
     return db.execute(
       `
-      SELECT *
-      FROM product_master
-      WHERE product_id = ? AND is_deleted = 0
+      SELECT p.*,
+             (SELECT pi.image_url FROM product_images pi
+              WHERE pi.product_id = p.product_id
+                AND pi.image_level = 'PRODUCT'
+                AND pi.is_deleted = 0
+              ORDER BY pi.is_primary DESC, pi.image_id DESC
+              LIMIT 1) AS image_url
+      FROM product_master p
+      WHERE p.product_id = ? AND p.is_deleted = 0
     `,
       [id],
     );
@@ -266,3 +331,25 @@ const Product = {
   },
 };
 export default Product;
+
+export const findBestSellers = (limit = 8) => {
+  const sql = `
+    SELECT p.*, c.category_name,
+           COALESCE(SUM(oi.quantity), 0) AS total_sold,
+           (SELECT pi.image_url FROM product_images pi
+            WHERE pi.product_id = p.product_id
+              AND pi.image_level = 'PRODUCT'
+              AND pi.is_deleted = 0
+            ORDER BY pi.is_primary DESC, pi.image_id DESC
+            LIMIT 1) AS image_url
+    FROM product_master p
+    LEFT JOIN category_master c ON p.category_id = c.category_id AND c.is_deleted = 0
+    LEFT JOIN order_items oi ON p.product_id = oi.product_id
+    WHERE p.is_deleted = 0 AND p.is_active = 1
+      AND (p.category_id IS NULL OR c.category_id IS NOT NULL)
+    GROUP BY p.product_id
+    ORDER BY total_sold DESC, p.product_id DESC
+    LIMIT ?
+  `;
+  return db.query(sql, [limit]);
+};

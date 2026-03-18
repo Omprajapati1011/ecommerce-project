@@ -11,7 +11,7 @@
  * Props: onSearch, onStatusFilter, statusFilter, onAddProduct, totalAll, totalActive
  * Consumed by: AdminProductsTab
  */
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
 import { Button } from "primereact/button";
@@ -34,6 +34,14 @@ const statusOptions = [
  */
 function AdminProductsToolbar({ onSearch, onStatusFilter, statusFilter, onAddProduct, totalAll, totalActive }) {
   const debounceRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 
   const handleSearchChange = useCallback(
     (e) => {

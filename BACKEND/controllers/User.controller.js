@@ -30,13 +30,13 @@ import {
 } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import pool from "../configs/db.js";
-import dotenv from "dotenv";
+import "../configs/env.js";
 import crypto from "crypto";
-
-dotenv.config();
 
 const OTP_PURPOSE_REGISTER = "register";
 const OTP_PURPOSE_FORGOT_PASSWORD = "forgot_password";
+const OTP_PURPOSE_EMAIL_CHANGE = "email_change";
+const OTP_PURPOSE_DELETE_ACCOUNT = "delete_account";
 const RESET_PURPOSE_PASSWORD = "password_reset";
 
 const OTP_TOKEN_SECRET = process.env.OTP_JWT_SECRET || process.env.JWT_SECRET;
@@ -50,10 +50,7 @@ const generateTempPassword = () =>
 
 const hashOtp = (otp) => {
   const pepper = process.env.OTP_PEPPER || "";
-  return crypto
-    .createHash("sha256")
-    .update(`${otp}.${pepper}`)
-    .digest("hex");
+  return crypto.createHash("sha256").update(`${otp}.${pepper}`).digest("hex");
 };
 
 const isHashMatch = (inputHashHex, expectedHashHex) => {
@@ -95,7 +92,11 @@ const sendOtpEmail = async ({ to, otp, purpose }) => {
   const subject =
     purpose === OTP_PURPOSE_REGISTER
       ? "Your registration OTP"
-      : "Your password reset OTP";
+      : purpose === OTP_PURPOSE_EMAIL_CHANGE
+        ? "Your email change OTP"
+        : purpose === OTP_PURPOSE_DELETE_ACCOUNT
+          ? "Your account deletion OTP"
+          : "Your password reset OTP";
 
   const mailFrom =
     process.env.SMTP_FROM ||
@@ -143,13 +144,17 @@ const otpRequestLimiter = new Map();
 const otpVerifyLimiter = new Map();
 
 const OTP_REQUEST_LIMIT = Number(process.env.OTP_REQUEST_LIMIT || 3);
-const OTP_REQUEST_WINDOW_MS = Number(process.env.OTP_REQUEST_WINDOW_MS || 10 * 60 * 1000);
+const OTP_REQUEST_WINDOW_MS = Number(
+  process.env.OTP_REQUEST_WINDOW_MS || 10 * 60 * 1000,
+);
 const OTP_REQUEST_MIN_INTERVAL_MS = Number(
   process.env.OTP_REQUEST_MIN_INTERVAL_MS || 60 * 1000,
 );
 
 const OTP_VERIFY_LIMIT = Number(process.env.OTP_VERIFY_LIMIT || 5);
-const OTP_VERIFY_WINDOW_MS = Number(process.env.OTP_VERIFY_WINDOW_MS || 10 * 60 * 1000);
+const OTP_VERIFY_WINDOW_MS = Number(
+  process.env.OTP_VERIFY_WINDOW_MS || 10 * 60 * 1000,
+);
 
 const getClientIp = (req) => {
   const xff = req.headers["x-forwarded-for"];
@@ -192,7 +197,7 @@ const formatRetrySeconds = (retryAfterMs) => {
 //user
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.validated?.body || req.body;
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -230,7 +235,9 @@ export const registerRequestOtp = async (req, res) => {
     }
 
     const { name, email, password } = req.validated?.body || req.body;
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
     const clientIp = getClientIp(req);
 
     const requestKey = `register:${normalizedEmail}:${clientIp}`;
@@ -270,7 +277,11 @@ export const registerRequestOtp = async (req, res) => {
       { expiresIn: OTP_EXPIRES_IN },
     );
 
-    await sendOtpEmail({ to: normalizedEmail, otp, purpose: OTP_PURPOSE_REGISTER });
+    await sendOtpEmail({
+      to: normalizedEmail,
+      otp,
+      purpose: OTP_PURPOSE_REGISTER,
+    });
 
     const responseData = { otpToken, expiresIn: OTP_EXPIRES_IN };
     if (process.env.NODE_ENV !== "production") {
@@ -354,7 +365,11 @@ export const registerVerifyOtp = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const body = req.validated?.body ?? req.body;
+    const email = String(body.email ?? "")
+      .trim()
+      .toLowerCase();
+    const { password } = body;
     // 1️ Find user
     const rows = await loginUserModel(email);
 
@@ -470,13 +485,13 @@ export const viewProfile = async (req, res) => {
 
     const userId = req.user.id;
 
-    const [result] = await viewUserModel(userId);
+    const result = await viewUserModel(userId);
 
     if (!result || result.length === 0) {
       return notFound(res, "User not found");
     }
 
-    return ok(res, "Profile fetched successfully", result);
+    return ok(res, "Profile fetched successfully", result[0]);
   } catch (error) {
     console.error("View Profile Error:", error);
     return serverError(res, "Failed to fetch profile");
@@ -486,8 +501,6 @@ export const viewProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user?.id;
-
-    // console.log(userId);
 
     if (!userId) {
       return badRequest(res, "Invalid user");
@@ -615,6 +628,336 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+export const changeEmailRequestOtp = async (req, res) => {
+  try {
+    if (!OTP_TOKEN_SECRET) {
+      return serverError(
+        res,
+        "OTP_JWT_SECRET or JWT_SECRET is required for OTP flows",
+      );
+    }
+
+    const userId = req.user?.id;
+    if (!userId) {
+      return unauthorized(res, "Authentication required");
+    }
+
+    const { newEmail } = req.validated?.body || req.body;
+    const normalizedNewEmail = String(newEmail || "")
+      .trim()
+      .toLowerCase();
+    const clientIp = getClientIp(req);
+
+    const requestKey = `change-email:${userId}:${clientIp}`;
+    const requestLimit = checkRateLimit(
+      otpRequestLimiter,
+      requestKey,
+      OTP_REQUEST_LIMIT,
+      OTP_REQUEST_WINDOW_MS,
+      OTP_REQUEST_MIN_INTERVAL_MS,
+    );
+    if (!requestLimit.allowed) {
+      const retrySeconds = formatRetrySeconds(requestLimit.retryAfterMs);
+      return tooManyRequests(
+        res,
+        `Too many OTP requests. Please try again in ${retrySeconds} seconds.`,
+      );
+    }
+
+    const profileRows = await viewUserModel(userId);
+    const currentUser = profileRows?.[0];
+    if (!currentUser) {
+      return notFound(res, "User not found");
+    }
+
+    if (String(currentUser.email || "").toLowerCase() === normalizedNewEmail) {
+      return badRequest(res, "New email must be different from current email");
+    }
+
+    const existingUsers = await loginUserModel(normalizedNewEmail);
+    if (existingUsers.length > 0) {
+      return conflict(res, "Email already exists");
+    }
+
+    const otp = generateOtp();
+    const otpHash = hashOtp(otp);
+
+    const otpToken = jwt.sign(
+      {
+        purpose: OTP_PURPOSE_EMAIL_CHANGE,
+        userId,
+        newEmail: normalizedNewEmail,
+        otpHash,
+      },
+      OTP_TOKEN_SECRET,
+      { expiresIn: OTP_EXPIRES_IN },
+    );
+
+    await sendOtpEmail({
+      to: normalizedNewEmail,
+      otp,
+      purpose: OTP_PURPOSE_EMAIL_CHANGE,
+    });
+
+    const responseData = { otpToken, expiresIn: OTP_EXPIRES_IN };
+    if (process.env.NODE_ENV !== "production") {
+      responseData.devOtp = otp;
+    }
+
+    return ok(res, "OTP sent to your new email", responseData);
+  } catch (error) {
+    console.error("changeEmailRequestOtp Error:", error);
+    return serverError(res, "Failed to send email change OTP");
+  }
+};
+
+export const changeEmailVerifyOtp = async (req, res) => {
+  try {
+    if (!OTP_TOKEN_SECRET) {
+      return serverError(
+        res,
+        "OTP_JWT_SECRET or JWT_SECRET is required for OTP flows",
+      );
+    }
+
+    const userId = req.user?.id;
+    if (!userId) {
+      return unauthorized(res, "Authentication required");
+    }
+
+    const { newEmail, otp, otpToken } = req.validated?.body || req.body;
+    const normalizedNewEmail = String(newEmail || "")
+      .trim()
+      .toLowerCase();
+    const clientIp = getClientIp(req);
+
+    const verifyKey = `change-email-verify:${userId}:${clientIp}`;
+    const verifyLimit = checkRateLimit(
+      otpVerifyLimiter,
+      verifyKey,
+      OTP_VERIFY_LIMIT,
+      OTP_VERIFY_WINDOW_MS,
+    );
+    if (!verifyLimit.allowed) {
+      const retrySeconds = formatRetrySeconds(verifyLimit.retryAfterMs);
+      return tooManyRequests(
+        res,
+        `Too many OTP attempts. Please try again in ${retrySeconds} seconds.`,
+      );
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(otpToken, OTP_TOKEN_SECRET);
+    } catch (error) {
+      return badRequest(res, "Invalid or expired OTP token");
+    }
+
+    if (decoded.purpose !== OTP_PURPOSE_EMAIL_CHANGE) {
+      return badRequest(res, "Invalid OTP purpose");
+    }
+
+    if (
+      Number(decoded.userId) !== Number(userId) ||
+      String(decoded.newEmail || "").toLowerCase() !== normalizedNewEmail
+    ) {
+      return badRequest(res, "Invalid OTP request");
+    }
+
+    const inputOtpHash = hashOtp(otp);
+    if (!isHashMatch(inputOtpHash, decoded.otpHash)) {
+      return badRequest(res, "Invalid OTP");
+    }
+
+    const existingUsers = await loginUserModel(normalizedNewEmail);
+    const hasDifferentUser = existingUsers.some(
+      (user) => Number(user.user_id) !== Number(userId),
+    );
+    if (hasDifferentUser) {
+      return conflict(res, "Email already exists");
+    }
+
+    const result = await updateProfileModel(
+      { email: normalizedNewEmail },
+      userId,
+    );
+
+    if (result.affectedRows === 0) {
+      return notFound(res, "User not found or already deleted");
+    }
+
+    await pool.query(
+      `UPDATE user_master SET refresh_token = NULL WHERE user_id = ?`,
+      [userId],
+    );
+
+    return ok(res, "Email changed successfully. Please login again.");
+  } catch (error) {
+    console.error("changeEmailVerifyOtp Error:", error);
+    if (error?.code === "ER_DUP_ENTRY") {
+      return conflict(res, "Email already exists");
+    }
+    return serverError(res, "Failed to verify email change OTP");
+  }
+};
+
+export const deleteAccountRequestOtp = async (req, res) => {
+  try {
+    if (!OTP_TOKEN_SECRET) {
+      return serverError(
+        res,
+        "OTP_JWT_SECRET or JWT_SECRET is required for OTP flows",
+      );
+    }
+
+    const userId = req.user?.id;
+    if (!userId) {
+      return unauthorized(res, "Authentication required");
+    }
+
+    const { email } = req.validated?.body || req.body;
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
+    const clientIp = getClientIp(req);
+
+    const requestKey = `delete-account:${userId}:${clientIp}`;
+    const requestLimit = checkRateLimit(
+      otpRequestLimiter,
+      requestKey,
+      OTP_REQUEST_LIMIT,
+      OTP_REQUEST_WINDOW_MS,
+      OTP_REQUEST_MIN_INTERVAL_MS,
+    );
+    if (!requestLimit.allowed) {
+      const retrySeconds = formatRetrySeconds(requestLimit.retryAfterMs);
+      return tooManyRequests(
+        res,
+        `Too many OTP requests. Please try again in ${retrySeconds} seconds.`,
+      );
+    }
+
+    const profileRows = await viewUserModel(userId);
+    const currentUser = profileRows?.[0];
+    if (!currentUser) {
+      return notFound(res, "User not found");
+    }
+
+    const currentEmail = String(currentUser.email || "")
+      .trim()
+      .toLowerCase();
+    if (currentEmail !== normalizedEmail) {
+      return badRequest(res, "Please enter your current account email");
+    }
+
+    const otp = generateOtp();
+    const otpHash = hashOtp(otp);
+
+    const otpToken = jwt.sign(
+      {
+        purpose: OTP_PURPOSE_DELETE_ACCOUNT,
+        userId,
+        email: normalizedEmail,
+        otpHash,
+      },
+      OTP_TOKEN_SECRET,
+      { expiresIn: OTP_EXPIRES_IN },
+    );
+
+    await sendOtpEmail({
+      to: normalizedEmail,
+      otp,
+      purpose: OTP_PURPOSE_DELETE_ACCOUNT,
+    });
+
+    const responseData = { otpToken, expiresIn: OTP_EXPIRES_IN };
+    if (process.env.NODE_ENV !== "production") {
+      responseData.devOtp = otp;
+    }
+
+    return ok(res, "OTP sent to your email for account deletion", responseData);
+  } catch (error) {
+    console.error("deleteAccountRequestOtp Error:", error);
+    return serverError(res, "Failed to send account deletion OTP");
+  }
+};
+
+export const deleteAccountVerifyOtp = async (req, res) => {
+  try {
+    if (!OTP_TOKEN_SECRET) {
+      return serverError(
+        res,
+        "OTP_JWT_SECRET or JWT_SECRET is required for OTP flows",
+      );
+    }
+
+    const userId = req.user?.id;
+    if (!userId) {
+      return unauthorized(res, "Authentication required");
+    }
+
+    const { email, otp, otpToken } = req.validated?.body || req.body;
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
+    const clientIp = getClientIp(req);
+
+    const verifyKey = `delete-account-verify:${userId}:${clientIp}`;
+    const verifyLimit = checkRateLimit(
+      otpVerifyLimiter,
+      verifyKey,
+      OTP_VERIFY_LIMIT,
+      OTP_VERIFY_WINDOW_MS,
+    );
+    if (!verifyLimit.allowed) {
+      const retrySeconds = formatRetrySeconds(verifyLimit.retryAfterMs);
+      return tooManyRequests(
+        res,
+        `Too many OTP attempts. Please try again in ${retrySeconds} seconds.`,
+      );
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(otpToken, OTP_TOKEN_SECRET);
+    } catch (error) {
+      return badRequest(res, "Invalid or expired OTP token");
+    }
+
+    if (decoded.purpose !== OTP_PURPOSE_DELETE_ACCOUNT) {
+      return badRequest(res, "Invalid OTP purpose");
+    }
+
+    if (
+      Number(decoded.userId) !== Number(userId) ||
+      String(decoded.email || "").toLowerCase() !== normalizedEmail
+    ) {
+      return badRequest(res, "Invalid OTP request");
+    }
+
+    const inputOtpHash = hashOtp(otp);
+    if (!isHashMatch(inputOtpHash, decoded.otpHash)) {
+      return badRequest(res, "Invalid OTP");
+    }
+
+    const result = await deleteByUserModel(userId);
+
+    if (result.affectedRows === 0) {
+      return notFound(res, "User not found or already deleted");
+    }
+
+    await pool.query(
+      `UPDATE user_master SET refresh_token = NULL WHERE user_id = ?`,
+      [userId],
+    );
+
+    return ok(res, "Account deleted successfully");
+  } catch (error) {
+    console.error("deleteAccountVerifyOtp Error:", error);
+    return serverError(res, "Failed to verify account deletion OTP");
+  }
+};
 //request otp for forget password
 export const forgotPasswordRequestOtp = async (req, res) => {
   try {
@@ -626,7 +969,9 @@ export const forgotPasswordRequestOtp = async (req, res) => {
     }
 
     const { email } = req.validated?.body || req.body;
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
     const clientIp = getClientIp(req);
 
     const requestKey = `forgot:${normalizedEmail}:${clientIp}`;
@@ -696,7 +1041,9 @@ export const forgotPasswordVerifyOtp = async (req, res) => {
     }
 
     const { email, otp, otpToken } = req.validated?.body || req.body;
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
     const clientIp = getClientIp(req);
 
     const verifyKey = `forgot-verify:${normalizedEmail}:${clientIp}`;
@@ -736,7 +1083,11 @@ export const forgotPasswordVerifyOtp = async (req, res) => {
 
     const users = await loginUserModel(normalizedEmail);
     const user = users[0];
-    if (!user || !decoded.userId || Number(decoded.userId) !== Number(user.user_id)) {
+    if (
+      !user ||
+      !decoded.userId ||
+      Number(decoded.userId) !== Number(user.user_id)
+    ) {
       return badRequest(res, "Invalid OTP");
     }
 
@@ -763,7 +1114,10 @@ export const forgotPasswordVerifyOtp = async (req, res) => {
 export const forgotPasswordResetWithToken = async (req, res) => {
   try {
     if (!RESET_TOKEN_SECRET) {
-      return serverError(res, "RESET_TOKEN_SECRET or OTP_JWT_SECRET is required");
+      return serverError(
+        res,
+        "RESET_TOKEN_SECRET or OTP_JWT_SECRET is required",
+      );
     }
 
     const { resetToken, newPassword } = req.validated?.body || req.body;
@@ -820,9 +1174,10 @@ export const getAllUsers = async (req, res) => {
     const role = String(req.query.role || "").trim();
     const status = String(req.query.status || "").trim();
     const sortField = String(req.query.sortField || "").trim() || "created_at";
-    const sortOrder = String(req.query.sortOrder || "desc").toLowerCase() === "asc"
-      ? "asc"
-      : "desc";
+    const sortOrder =
+      String(req.query.sortOrder || "desc").toLowerCase() === "asc"
+        ? "asc"
+        : "desc";
 
     const limit = Number.isNaN(requestedLimit)
       ? 10
@@ -867,7 +1222,9 @@ export const createUserByAdmin = async (req, res) => {
   try {
     const adminId = req.user?.id;
     const { name, email, role } = req.validated?.body || req.body;
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
 
     if (!adminId) {
       return unauthorized(res, "Authentication required");
@@ -965,7 +1322,7 @@ export const blockUser = async (req, res) => {
     // 2️ Check if user exists
     const [rows] = await pool.query(
       "SELECT is_blocked FROM user_master WHERE user_id = ?",
-      [userId]
+      [userId],
     );
 
     if (rows.length === 0) {
@@ -983,16 +1340,15 @@ export const blockUser = async (req, res) => {
     await blockUserById(userId, adminId);
 
     return ok(res, "User blocked successfully");
-
   } catch (error) {
     console.error("Block User Error:", error);
     return serverError(res, "Internal server error");
   }
 };
 
-export const unblockUser = async (req,res) => {
+export const unblockUser = async (req, res) => {
   try {
-     const userId = req.params.id;
+    const userId = req.params.id;
     const adminId = req.user.id;
 
     // 1️ Validate userId
@@ -1003,7 +1359,7 @@ export const unblockUser = async (req,res) => {
     // 2️ Check if user exists
     const [rows] = await pool.query(
       "SELECT is_blocked FROM user_master WHERE user_id = ?",
-      [userId]
+      [userId],
     );
 
     if (rows.length === 0) {
@@ -1021,9 +1377,8 @@ export const unblockUser = async (req,res) => {
     await unblockUserById(userId, adminId);
 
     return ok(res, "User Unblocked successfully");
-
   } catch (error) {
     console.error("Block User Error:", error);
     return serverError(res, "Internal server error");
   }
-}
+};

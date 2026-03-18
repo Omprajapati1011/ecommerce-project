@@ -6,6 +6,9 @@ import {
   getActiveOffer,
   getAllOffer,
   getOfferById,
+  getOfferByCategoryId,
+  getOfferByProductId,
+  getVisibleOffersByProductId,
   updateOfferById,
   getValidateOfferByName,
   getOfferUsageCount,
@@ -24,7 +27,10 @@ import {
   updateOfferProductCategoryMappingById,
   getOfferTypeByIdWithoutActiveCheck,
 } from "../models/offer.model.js";
-import { getCartItemsWithProduct } from "../models/cart.model.js";
+import {
+  getCartItemsWithProduct,
+  getCartScopeDetails,
+} from "../models/cart.model.js";
 import {
   badRequest,
   conflict,
@@ -353,6 +359,57 @@ export const getOfferByIdController = async (req, res) => {
 };
 
 /**
+ * Fetch all active, non-deleted offers mapped to a specific product id.
+ */
+export const getOfferByProductIdController = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const result = await getOfferByProductId(productId);
+
+    return ok(res, "Offers fetched successfully by product id", result || []);
+  } catch (error) {
+    console.error(error);
+    return serverError(res, error.message || "Internal server error");
+  }
+};
+
+/**
+ * Fetch all active, non-deleted offers mapped to a specific category id.
+ */
+export const getOfferByCategoryIdController = async (req, res) => {
+  try {
+    const categoryId = req.params.id;
+    const result = await getOfferByCategoryId(categoryId);
+
+    return ok(res, "Offers fetched successfully by category id", result || []);
+  } catch (error) {
+    console.error(error);
+    return serverError(res, error.message || "Internal server error");
+  }
+};
+
+/**
+ * Fetch both product-level and category-level active offers for a product id.
+ */
+export const getVisibleOffersByProductIdController = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const result = await getVisibleOffersByProductId(productId);
+
+    const productCount = result.product_offers?.length ?? 0;
+    const categoryCount = result.category_offers?.length ?? 0;
+
+    return ok(res, "Visible offers fetched successfully by product id", {
+      product_offers: result.product_offers || [],
+      category_offers: result.category_offers || [],
+    });
+  } catch (error) {
+    console.error(error);
+    return serverError(res, error.message || "Internal server error");
+  }
+};
+
+/**
  * Update an offer by id with partial payload fields.
  * Validation middleware ensures payload shape before controller runs.
  */
@@ -497,6 +554,31 @@ export const validateOfferController = async (req, res) => {
         return badRequest(
           res,
           "Either product_id or category_id is required for this offer type",
+        );
+      }
+
+      if (product_id && category_id) {
+        return badRequest(
+          res,
+          "Provide only one: product_id or category_id",
+        );
+      }
+
+      const { productIds, categoryIds } = await getCartScopeDetails(
+        req.cart.cart_id,
+      );
+
+      if (product_id && !productIds.includes(Number(product_id))) {
+        return badRequest(
+          res,
+          "Provided product_id is not present in the user's cart",
+        );
+      }
+
+      if (category_id && !categoryIds.includes(Number(category_id))) {
+        return badRequest(
+          res,
+          "Provided category_id is not present in the user's cart",
         );
       }
 

@@ -162,7 +162,9 @@ export const getVariantImageController = async (req, res) => {
     );
 
     if (!image) {
-      return notFound(res, "No image found");
+      // Return 200 instead of 404 so frontend fallback UI can handle
+      // "no image" without noisy network errors in browser console.
+      return ok(res, "No image found", null);
     }
 
     return ok(res, "Variant image fetched successfully", image);

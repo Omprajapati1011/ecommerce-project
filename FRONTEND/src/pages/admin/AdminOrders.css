@@ -1,0 +1,78 @@
+/* Admin Orders Tab Styles */
+
+.admin-orders-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.admin-orders-container .p-datatable {
+  font-size: 0.875rem;
+}
+
+.admin-orders-container .p-datatable-thead > tr > th {
+  background: var(--surface-100);
+  font-weight: 600;
+  padding: 0.75rem;
+}
+
+.admin-orders-container .p-datatable-tbody > tr > td {
+  padding: 0.75rem;
+}
+
+.admin-orders-container .p-tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Stats cards */
+.admin-orders-container .p-card {
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.admin-orders-container .p-card .p-card-content {
+  padding: 0;
+}
+
+/* Inline status dropdowns in table rows */
+.inline-status-dropdown .p-dropdown-label,
+.admin-status-dropdown .p-dropdown-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+}
+.inline-status-dropdown .p-dropdown-trigger,
+.admin-status-dropdown .p-dropdown-trigger {
+  width: 1.5rem;
+}
+.inline-status-dropdown,
+.admin-status-dropdown {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  min-width: 110px;
+  background: transparent;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.inline-status-dropdown:hover,
+.admin-status-dropdown:hover {
+  border-color: var(--primary-color, #2f7a6f);
+}
+[data-theme="dark"] .admin-orders-container .p-datatable-thead > tr > th {
+  background: var(--surface-800);
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .admin-orders-container .p-datatable-tbody > tr {
+  background: var(--surface-900);
+  color: var(--text-color);
+}
+
+[data-theme="dark"]
+  .admin-orders-container
+  .p-datatable-tbody
+  > tr.p-highlight {
+  background: var(--primary-color);
+}

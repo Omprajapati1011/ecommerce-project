@@ -1,11 +1,9 @@
-import pool from "../configs/db.js";
 import {
   addUserAddressModel,
   deleteAddressModel,
   getAddressByIdModel,
   getAllAddresses,
   getDefaultAddressModel,
-  removeDefaultAddress,
   setDefaultAddressModel,
   updateAddressModel,
 } from "../models/user.address.model.js";
@@ -20,6 +18,7 @@ import {
 export const addUserAddress = async (req, res) => {
   try {
     const userId = req.user.id;
+    const existingAddresses = await getAllAddresses(userId);
 
     const data = {
       user_id: userId,
@@ -31,11 +30,21 @@ export const addUserAddress = async (req, res) => {
       state: req.body.state,
       postal_code: req.body.postal_code,
       country: req.body.country || "India",
+      is_default:
+        typeof req.body.is_default === "boolean"
+          ? Number(req.body.is_default)
+          : existingAddresses.length === 0
+            ? 1
+            : 0,
       created_at: new Date(),
       created_by: userId,
     };
 
     const result = await addUserAddressModel(data);
+
+    if (data.is_default === 1 && existingAddresses.length > 0) {
+      await setDefaultAddressModel(userId, result.insertId);
+    }
 
     return created(res, "Address added successfully", {
       address_id: result.insertId,
@@ -48,16 +57,16 @@ export const addUserAddress = async (req, res) => {
 
 export const setDefaultAddress = async (req, res) => {
   try {
-    const addressId = req.params.id;
+    const addressId = Number(req.params.id);
     const userId = req.user.id;
 
-    // 1️ Remove existing default address
-    await removeDefaultAddress(userId);
+    if (!Number.isInteger(addressId) || addressId <= 0) {
+      return badRequest(res, "Valid address ID is required");
+    }
 
-    // 2️ Set selected address as default
     const result = await setDefaultAddressModel(userId, addressId);
 
-    if (result.affectedRows === 0) {
+    if (result?.notFound) {
       return notFound(res, "Address not found");
     }
 
@@ -137,7 +146,7 @@ export const updateAddress = async (req, res) => {
       updated_by: userId,
     };
 
-    const result = await updateAddressModel(data, userId, addressId);
+    const result = await updateAddressModel(data, addressId, userId);
 
     if (result.affectedRows === 0) {
       return notFound(res, "Address not found or already deleted");
@@ -155,7 +164,6 @@ export const deleteAddress = async (req, res) => {
     const addressId = req.params.addressId;
     const userId = req.user.id;
 
-    // Soft delete only if address belongs to user and not already deleted
     const result = await deleteAddressModel(addressId, userId);
 
     if (result.affectedRows === 0) {

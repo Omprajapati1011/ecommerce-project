@@ -4,4 +4,5 @@ node_modules/
 # Auto-generated commented schema (for learning/documentation only)
 BACKEND/seeders/db_schema_commented.sql
 .vscode
+dist/
 BACKEND/seeders/seed.js

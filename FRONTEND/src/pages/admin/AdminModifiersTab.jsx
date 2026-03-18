@@ -13,7 +13,7 @@
  * API: adminModifiersApi (fetchModifiers, createModifier, updateModifier,
  *      toggleModifierStatus, deleteModifier)
  */
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Toast } from "primereact/toast";
 import { Button } from "primereact/button";
 import { Plus } from "lucide-react";
@@ -27,7 +27,7 @@ import {
   toggleModifierStatus,
   deleteModifier,
 } from "../../../api/adminModifiersApi";
-import "./AdminProducts.css";
+import "./AdminShared.css";
 
 function AdminModifiersTab() {
   const toast = useRef(null);
@@ -65,9 +65,9 @@ function AdminModifiersTab() {
   }, [showToast]);
 
   // Load on mount
-  useState(() => {
+  useEffect(() => {
     loadModifiers();
-  });
+  }, [loadModifiers]);
 
   // CRUD handlers
   const handleAdd = useCallback(() => {

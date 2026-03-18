@@ -12,6 +12,7 @@ async function getAllModifiers() {
     `SELECT modifier_id,
                 modifier_name,
                 modifier_value,
+                modifier_type,
                 additional_price,
                 is_active,
                 created_at,
@@ -30,6 +31,7 @@ async function getModifierById(id) {
     `SELECT modifier_id,
                 modifier_name,
                 modifier_value,
+                modifier_type,
                 additional_price,
                 is_active,
                 created_at,
@@ -49,6 +51,7 @@ async function getModifierByIdForAdmin(id) {
     `SELECT modifier_id,
                 modifier_name,
                 modifier_value,
+                modifier_type,
                 additional_price,
                 is_active,
                 created_at,
@@ -78,6 +81,7 @@ async function checkModifierExists(modifier_name, modifier_value) {
 async function createModifier({
   modifier_name,
   modifier_value,
+  modifier_type,
   additional_price,
   created_by,
 }) {
@@ -85,10 +89,11 @@ async function createModifier({
     `INSERT INTO modifier_master (
             modifier_name,
             modifier_value,
+            modifier_type,
             additional_price,
             created_by
-        ) VALUES (?, ?, ?, ?)`,
-    [modifier_name, modifier_value, additional_price || 0.0, created_by],
+        ) VALUES (?, ?, ?, ?, ?)`,
+    [modifier_name, modifier_value, modifier_type || null, additional_price || 0.0, created_by],
   );
   return result.insertId;
 }
@@ -96,12 +101,13 @@ async function createModifier({
 // Update an existing modifier
 async function updateModifier(
   modifier_id,
-  { modifier_name, modifier_value, additional_price, is_active, updated_by },
+  { modifier_name, modifier_value, modifier_type, additional_price, is_active, updated_by },
 ) {
   await pool.query(
     `UPDATE modifier_master
         SET modifier_name = ?,
             modifier_value = ?,
+            modifier_type = ?,
             additional_price = ?,
             is_active = ?,
             updated_by = ?
@@ -110,6 +116,7 @@ async function updateModifier(
     [
       modifier_name,
       modifier_value,
+      modifier_type ?? null,
       additional_price,
       is_active,
       updated_by,
@@ -261,7 +268,8 @@ async function getModifiersByProductPortion(product_portion_id) {
     `SELECT mm.modifier_id,
             mm.modifier_name,
             mm.modifier_value,
-            mp.additional_price,
+            mm.modifier_type,
+            COALESCE(NULLIF(mp.additional_price, 0), mm.additional_price, 0) AS additional_price,
             mp.stock,
             mp.is_active,
             mp.modifier_portion_id
@@ -272,7 +280,7 @@ async function getModifiersByProductPortion(product_portion_id) {
         AND mp.is_active = 1
         AND mm.is_deleted = 0
         AND mm.is_active = 1
-      ORDER BY mm.modifier_name`,
+      ORDER BY mm.modifier_type, mm.modifier_name`,
     [product_portion_id],
   );
   return rows;
@@ -284,7 +292,8 @@ async function getModifiersByProduct(product_id) {
     `SELECT mm.modifier_id,
             mm.modifier_name,
             mm.modifier_value,
-            mp.additional_price,
+            mm.modifier_type,
+            COALESCE(NULLIF(mp.additional_price, 0), mm.additional_price, 0) AS additional_price,
             mp.stock,
             mp.is_active,
             mp.modifier_portion_id
@@ -294,7 +303,7 @@ async function getModifiersByProduct(product_id) {
         AND mp.product_portion_id IS NULL
         AND mp.is_deleted = 0
         AND mm.is_deleted = 0
-      ORDER BY mm.modifier_name`,
+      ORDER BY mm.modifier_type, mm.modifier_name`,
     [product_id],
   );
   return rows;

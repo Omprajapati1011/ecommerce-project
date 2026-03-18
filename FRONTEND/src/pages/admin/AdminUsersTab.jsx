@@ -14,7 +14,8 @@ import AdminUsersTable from "./AdminUsersTable";
 import UserDeleteDialog from "./UserDeleteDialog";
 import UserDetailsDialog from "./UserDetailsDialog";
 import AdminUserCreateDialog from "./AdminUserCreateDialog";
-import "./AdminProducts.css";
+import getApiErrorMessage from "../../utils/apiError";
+import "./AdminShared.css";
 
 function AdminUsersTab() {
   const dispatch = useDispatch();
@@ -95,7 +96,11 @@ function AdminUsersTab() {
       try {
         await dispatch(fetchUserProfileById(Number(user.user_id))).unwrap();
       } catch (error) {
-        showToast("error", "Error", error || "Failed to fetch user profile");
+        showToast(
+          "error",
+          "Error",
+          getApiErrorMessage(error, "We could not load this user profile."),
+        );
       }
     },
     [dispatch, showToast]
@@ -113,7 +118,11 @@ function AdminUsersTab() {
         }
         await loadUsers();
       } catch (error) {
-        showToast("error", "Error", error || "Failed to update user status");
+        showToast(
+          "error",
+          "Error",
+          getApiErrorMessage(error, "We could not update this user right now."),
+        );
       }
     },
     [dispatch, loadUsers, showToast]
@@ -149,7 +158,11 @@ function AdminUsersTab() {
           await loadUsers();
         }
       } catch (error) {
-        showToast("error", "Error", error || "Failed to delete user");
+        showToast(
+          "error",
+          "Error",
+          getApiErrorMessage(error, "We could not delete this user right now."),
+        );
       } finally {
         setDeleting(false);
       }
@@ -165,7 +178,11 @@ function AdminUsersTab() {
         setCreateDialog(false);
         await loadUsers();
       } catch (error) {
-        showToast("error", "Error", error || "Failed to create user");
+        showToast(
+          "error",
+          "Error",
+          getApiErrorMessage(error, "We could not create the user right now."),
+        );
       }
     },
     [dispatch, loadUsers, showToast],

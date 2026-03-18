@@ -13,8 +13,8 @@
  * API: adminPortionsApi (fetchPortions, createPortion, updatePortion,
  *      togglePortionStatus, deletePortion)
  */
-import { useState, useCallback, useRef } from "react";
-import { Toast } from "primereact/toast";
+import { useState, useCallback, useEffect } from "react";
+import { useToast } from "../../context/ToastContext";
 import { Button } from "primereact/button";
 import { Plus } from "lucide-react";
 import AdminPortionsTable from "./AdminPortionsTable";
@@ -27,10 +27,11 @@ import {
   togglePortionStatus,
   deletePortion,
 } from "../../../api/adminPortionsApi";
-import "./AdminProducts.css";
+import getApiErrorMessage from "../../utils/apiError";
+import "./AdminShared.css";
 
 function AdminPortionsTab() {
-  const toast = useRef(null);
+  const showToast = useToast();
 
   const [portions, setPortions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,12 +43,8 @@ function AdminPortionsTab() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const showToast = useCallback((severity, summary, detail) => {
-    toast.current?.show({ severity, summary, detail, life: 3000 });
-  }, []);
-
   const getErrorMessage = (error) =>
-    error.response?.data?.message || error.message || "An unexpected error occurred.";
+    getApiErrorMessage(error, "An unexpected error occurred.");
 
   // Load portions
   const loadPortions = useCallback(async () => {
@@ -65,9 +62,9 @@ function AdminPortionsTab() {
   }, [showToast]);
 
   // Load on mount
-  useState(() => {
+  useEffect(() => {
     loadPortions();
-  });
+  }, [loadPortions]);
 
   // CRUD handlers
   const handleAdd = useCallback(() => {
@@ -105,7 +102,7 @@ function AdminPortionsTab() {
         setSaving(false);
       }
     },
-    [selectedPortion, loadPortions, handleCloseForm, showToast]
+    [selectedPortion, loadPortions, handleCloseForm, showToast],
   );
 
   const handleDeleteClick = useCallback((portion) => {
@@ -134,7 +131,7 @@ function AdminPortionsTab() {
         setDeleting(false);
       }
     },
-    [loadPortions, handleCloseDelete, showToast]
+    [loadPortions, handleCloseDelete, showToast],
   );
 
   const handleToggleStatus = useCallback(
@@ -144,31 +141,33 @@ function AdminPortionsTab() {
         prev.map((p) =>
           p.portion_id === portion.portion_id
             ? { ...p, is_active: !p.is_active }
-            : p
-        )
+            : p,
+        ),
       );
       try {
         await togglePortionStatus(portion.portion_id);
-        showToast("success", "Success", `Portion ${portion.is_active ? "deactivated" : "activated"} successfully`);
+        showToast(
+          "success",
+          "Success",
+          `Portion ${portion.is_active ? "deactivated" : "activated"} successfully`,
+        );
       } catch (error) {
         // Revert
         setPortions((prev) =>
           prev.map((p) =>
             p.portion_id === portion.portion_id
               ? { ...p, is_active: portion.is_active }
-              : p
-          )
+              : p,
+          ),
         );
         showToast("error", "Error", getErrorMessage(error));
       }
     },
-    [showToast]
+    [showToast],
   );
 
   return (
     <div className="admin-products-container animate-fade-in flex-1 flex flex-col min-h-0">
-      <Toast ref={toast} position="top-right" />
-
       <div className="admin-products-card flex-1 flex flex-col min-h-0">
         {/* Toolbar */}
         <div className="flex items-center justify-between mb-6">

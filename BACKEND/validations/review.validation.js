@@ -81,6 +81,19 @@ export const getReviewsQuerySchema = z.object({
   verified: z.coerce.number().int().min(0).max(1).optional(),
 });
 
+// Body validation for bulk product rating summaries.
+export const bulkProductSummarySchema = z.object({
+  product_ids: z
+    .array(
+      z.coerce
+        .number({ invalid_type_error: "product_ids must be an array of numbers" })
+        .int("product_id must be an integer")
+        .positive("product_id must be positive"),
+    )
+    .min(1, "product_ids must include at least one id")
+    .max(100, "product_ids must include at most 100 ids"),
+});
+
 // Generic validator helper for body/params/query.
 const validateWith = (schema, source, targetKey) => (req, res, next) => {
   const result = schema.safeParse(req[source]);

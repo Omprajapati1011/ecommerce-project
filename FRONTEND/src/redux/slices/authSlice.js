@@ -1,6 +1,7 @@
 // src/redux/authSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../../api/api";
+import getApiErrorMessage from "../../utils/apiError";
 
 //  Get user from localStorage
 const storedUser = localStorage.getItem("currentUser");
@@ -38,7 +39,12 @@ export const loginUser = createAsyncThunk(
         refreshToken: refreshToken || null,
       };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Server error");
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "We could not log you in right now. Please try again.",
+        ),
+      );
     }
   },
 );
@@ -47,13 +53,9 @@ export const loginUser = createAsyncThunk(
 export const registerUser = createAsyncThunk(
   "auth/registerUser",
   async (_, { rejectWithValue }) => {
-    try {
-      return rejectWithValue(
-        "Direct registration is disabled. Use OTP registration flow.",
-      );
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Server error");
-    }
+    return rejectWithValue(
+      "Direct registration is disabled. Use OTP registration flow.",
+    );
   },
 );
 
@@ -66,7 +68,12 @@ export const logoutUser = createAsyncThunk(
       return response.data;
     } catch (error) {
       dispatch(clearAuth());
-      return rejectWithValue(error.response?.data?.message || "Server error");
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "We signed you out locally, but the server could not confirm it.",
+        ),
+      );
     }
   },
 );
@@ -95,7 +102,12 @@ export const refreshAccessToken = createAsyncThunk(
 
       return newAccessToken;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Server error");
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Your session could not be refreshed. Please log in again.",
+        ),
+      );
     }
   },
 );

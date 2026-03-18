@@ -15,7 +15,13 @@ import { InputSwitch } from "primereact/inputswitch";
 import { Skeleton } from "primereact/skeleton";
 import { Pencil, Trash2 } from "lucide-react";
 
-function AdminModifiersTable({ modifiers, loading, onEdit, onDelete, onToggleStatus }) {
+function AdminModifiersTable({
+  modifiers,
+  loading,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+}) {
   const nameBodyTemplate = (rowData) => (
     <span className="font-medium text-gray-900 dark:text-gray-100">
       {rowData.modifier_name}
@@ -33,7 +39,10 @@ function AdminModifiersTable({ modifiers, loading, onEdit, onDelete, onToggleSta
     if (price === 0) return <span className="text-gray-400">—</span>;
     return (
       <span className="font-medium text-green-600 dark:text-green-400">
-        {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(price)}
+        {new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(price)}
       </span>
     );
   };
@@ -45,7 +54,9 @@ function AdminModifiersTable({ modifiers, loading, onEdit, onDelete, onToggleSta
         onChange={(e) => onToggleStatus(rowData, e.value)}
         className="admin-status-switch"
       />
-      <span className={`text-xs font-medium ${rowData.is_active ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
+      <span
+        className={`text-xs font-medium ${rowData.is_active ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}
+      >
         {rowData.is_active ? "Active" : "Inactive"}
       </span>
     </div>
@@ -81,7 +92,9 @@ function AdminModifiersTable({ modifiers, loading, onEdit, onDelete, onToggleSta
   );
 
   // Skeleton templates
-  const skeletonTemplate = () => <Skeleton height="1.25rem" className="w-[80%]" />;
+  const skeletonTemplate = () => (
+    <Skeleton height="1.25rem" className="w-[80%]" />
+  );
   const skeletonSwitchTemplate = () => (
     <div className="flex items-center gap-2">
       <Skeleton width="2.5rem" height="1.25rem" borderRadius="1rem" />
@@ -95,7 +108,9 @@ function AdminModifiersTable({ modifiers, loading, onEdit, onDelete, onToggleSta
     </div>
   );
 
-  const skeletonData = Array.from({ length: 5 }, (_, i) => ({ modifier_id: `skeleton-${i}` }));
+  const skeletonData = Array.from({ length: 6 }, (_, i) => ({
+    modifier_id: `skeleton-${i}`,
+  }));
 
   return (
     <div className="admin-products-table-wrapper flex-1 flex flex-col min-h-0">
@@ -103,21 +118,30 @@ function AdminModifiersTable({ modifiers, loading, onEdit, onDelete, onToggleSta
         value={loading ? skeletonData : modifiers}
         dataKey="modifier_id"
         scrollable
+        scrollHeight="calc(100vh - 18rem)"
+        paginator={!loading && modifiers.length > 5}
+        rows={10}
+        rowsPerPageOptions={[5, 10, 25]}
+        stateStorage="local"
+        stateKey="admin-modifiers-dt-state"
         emptyMessage="No modifiers found."
         className="admin-products-table"
         tableStyle={{ minWidth: "45rem" }}
+        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
       >
         <Column
           field="modifier_id"
           header="ID"
           body={loading ? skeletonTemplate : null}
           style={{ width: "5rem" }}
+          sortable={!loading}
         />
         <Column
           field="modifier_name"
           header="Name"
           body={loading ? skeletonTemplate : nameBodyTemplate}
           style={{ minWidth: "10rem" }}
+          sortable={!loading}
         />
         <Column
           field="modifier_value"
@@ -130,6 +154,7 @@ function AdminModifiersTable({ modifiers, loading, onEdit, onDelete, onToggleSta
           header="Additional Price"
           body={loading ? skeletonTemplate : priceBodyTemplate}
           style={{ minWidth: "10rem" }}
+          sortable={!loading}
         />
         <Column
           field="is_active"

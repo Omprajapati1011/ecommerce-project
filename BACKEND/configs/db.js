@@ -1,7 +1,5 @@
 import mysql from "mysql2/promise";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "./env.js";
 
 const dbPort = Number.parseInt(process.env.DB_PORT, 10) || 3306;
 
@@ -22,7 +20,10 @@ const testConnection = async () => {
     console.log(`DB connection done on ${process.env.DB_HOST}:${dbPort}`);
     connection.release();
   } catch (err) {
-    console.log(`DB connection failed on ${process.env.DB_HOST}:${dbPort}:`, err.message);
+    console.log(
+      `DB connection failed on ${process.env.DB_HOST}:${dbPort}:`,
+      err.message,
+    );
   }
 };
 

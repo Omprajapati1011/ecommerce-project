@@ -14,7 +14,7 @@ import {
   fetchAllUsers,
   unblockUserByAdmin,
 } from "../../redux/slices/userSlice";
-import "./AdminProducts.css";
+import "./AdminShared.css";
 
 const STATUS_OPTIONS = [
   { label: "All status", value: "all" },
