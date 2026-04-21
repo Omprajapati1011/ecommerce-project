@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Toast } from "primereact/toast";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
+import { Sidebar } from "primereact/sidebar";
 import { useSelector } from "react-redux";
-import { PanelLeft, PanelLeftClose } from "lucide-react";
+import { Menu, PanelLeft, PanelLeftClose } from "lucide-react";
 import { useCustomerDashboard } from "./dashboard/useCustomerDashboard";
 import DashboardContent from "./dashboard/components/DashboardContent";
 import DashboardSidebar from "./dashboard/components/DashboardSidebar";
@@ -30,6 +31,7 @@ function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const toastRef = useRef(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     try {
       const stored = localStorage.getItem("customer-sidebar-open");
@@ -93,6 +95,7 @@ function DashboardPage() {
   const handleTabChange = useCallback(
     (nextTab) => {
       setActiveTab(nextTab);
+      setMobileSidebarOpen(false);
       const targetPath = getDashboardPathForTab(nextTab);
 
       if (`${location.pathname}${location.search}` !== targetPath) {
@@ -109,24 +112,34 @@ function DashboardPage() {
 
   return (
     <div
-      className={`admin-dashboard-grid grid items-start gap-6 p-6 ${sidebarOpen ? "lg:grid-cols-[290px_1fr]" : "lg:grid-cols-1"}`}
+      className={`customer-dashboard-shell admin-dashboard-grid grid items-start gap-6 p-6 ${sidebarOpen ? "lg:grid-cols-[290px_1fr]" : "lg:grid-cols-1"}`}
     >
-      <DashboardSidebar
-        activeTab={activeTab}
-        currentUser={currentUser}
-        sidebarOpen={sidebarOpen}
-        onTabChange={handleTabChange}
-      />
+      <div className="hidden lg:block">
+        <DashboardSidebar
+          activeTab={activeTab}
+          currentUser={currentUser}
+          sidebarOpen={sidebarOpen}
+          onTabChange={handleTabChange}
+        />
+      </div>
 
       <section className="admin-main-panel min-w-[0] min-h-0 h-full">
         <Card
-          className="rounded-2xl border border-gray-100 bg-white pt-6 px-6 pb-1 dark:border-[#1f2933] dark:bg-[#151e22] shadow-sm h-full overflow-hidden"
+          className="customer-dashboard-card rounded-2xl border border-gray-100 bg-white pt-6 px-6 pb-1 dark:border-[#1f2933] dark:bg-[#151e22] shadow-sm h-full overflow-hidden"
           pt={{
             body: { className: "p-0 h-full flex flex-col" },
             content: { className: "p-0 flex-1 flex flex-col min-h-0" },
           }}
         >
-          <div className="mb-4 flex items-center gap-3">
+          <div className="customer-dashboard-page-heading mb-4 flex items-center gap-3">
+            <Button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="!inline-flex lg:!hidden !items-center !justify-center !w-10 !h-10 !p-0 !rounded-xl !shadow-none !border !border-amber-200 !bg-amber-50 !text-amber-800 hover:!bg-amber-100 dark:!border-[#243440] dark:!bg-[#10171b] dark:!text-slate-100"
+              aria-label="Open dashboard menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
             <Button
               type="button"
               onClick={toggleSidebar}
@@ -140,7 +153,7 @@ function DashboardPage() {
                 <PanelLeft className="h-5 w-5" />
               )}
             </Button>
-            <div>
+            <div className="min-w-0">
               <h3 className="font-serif text-2xl text-gray-900 dark:text-slate-100">
                 {activeLabel}
               </h3>
@@ -150,7 +163,7 @@ function DashboardPage() {
             </div>
           </div>
 
-          <div className="admin-main-scroll flex-1 min-h-0 overflow-y-auto pr-1">
+          <div className="admin-main-scroll customer-dashboard-content-scroll flex-1 min-h-0 overflow-y-auto pr-1">
             <DashboardContent
               currentUser={currentUser}
               dashboard={dashboard}
@@ -159,6 +172,25 @@ function DashboardPage() {
           </div>
         </Card>
       </section>
+
+      <Sidebar
+        visible={mobileSidebarOpen}
+        onHide={() => setMobileSidebarOpen(false)}
+        position="left"
+        showCloseIcon={false}
+        blockScroll
+        className="customer-dashboard-mobile-menu !w-[88vw] !max-w-[360px]"
+        pt={{
+          content: { className: "h-full p-0" },
+        }}
+      >
+        <DashboardSidebar
+          activeTab={activeTab}
+          currentUser={currentUser}
+          sidebarOpen
+          onTabChange={handleTabChange}
+        />
+      </Sidebar>
 
       <Toast
         ref={toastRef}

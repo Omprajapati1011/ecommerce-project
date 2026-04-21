@@ -30,7 +30,7 @@ export const getDiscountOnItem = async (category_id) => {
   return discount;
 };
 
-// Insert order items and clear cart items
+// Insert order items. Cart clearing is handled only after checkout is finalized.
 export const insertQuery = async (values, cart_id, order_id, modifiersMapping) => {
   const [insert] = await pool.query(
     `INSERT INTO order_items
@@ -58,9 +58,6 @@ export const insertQuery = async (values, cart_id, order_id, modifiersMapping) =
     }
   }
 
-  await pool.query("update cart_items set is_deleted=1 where cart_id = ? ", [
-    cart_id,
-  ]);
   return insert;
 };
 

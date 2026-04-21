@@ -379,7 +379,7 @@ function CartPage() {
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="cart-page-header mb-6 sm:mb-8">
           <nav className="flex mb-4 text-sm text-gray-500 dark:text-slate-400">
             <Link to="/" className="hover:text-[#2f7a6f] transition-colors">
               Home
@@ -389,8 +389,8 @@ function CartPage() {
               Shopping Cart
             </span>
           </nav>
-          <div className="flex items-center justify-between">
-            <h1 className="font-serif text-3xl md:text-4xl font-semibold text-gray-900 dark:text-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="font-serif text-2xl font-semibold text-gray-900 sm:text-3xl md:text-4xl dark:text-slate-100">
               Shopping Cart ({cart.items.length}{" "}
               {cart.items.length === 1 ? "item" : "items"})
             </h1>
@@ -407,9 +407,9 @@ function CartPage() {
         </div>
 
         {/* Mobile Order Summary Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#151e22] border-t border-[#e8dccf] dark:border-[#243440] p-4 z-40 shadow-2xl">
-          <div className="flex items-center justify-between mb-3">
-            <div>
+        <div className="cart-mobile-summary-bar lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#151e22] border-t border-[#e8dccf] dark:border-[#243440] p-4 z-40 shadow-2xl">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-sm text-gray-500 dark:text-slate-400">
                 Total Amount
               </p>
@@ -425,7 +425,7 @@ function CartPage() {
                 </span>
               }
               onClick={proceedToCheckout}
-              className="!px-6 !py-3 !bg-[#2f7a6f] !text-white !rounded-xl hover:!bg-[#265c54] !transition-all"
+              className="cart-mobile-checkout-button !px-6 !py-3 !bg-[#2f7a6f] !text-white !rounded-xl hover:!bg-[#265c54] !transition-all"
               pt={{
                 root: { className: "!overflow-hidden" },
                 label: { className: "!p-0 !m-0" },
@@ -462,15 +462,15 @@ function CartPage() {
             {cart.items.map((item) => (
               <div
                 key={item.cartItemId}
-                className={`group bg-white dark:bg-[#151e22] rounded-2xl p-4 md:p-6 shadow-sm border border-[#e8dccf] dark:border-[#243440] transition-all hover:shadow-md ${
+                className={`cart-item-card group bg-white dark:bg-[#151e22] rounded-2xl p-3 sm:p-4 md:p-6 shadow-sm border border-[#e8dccf] dark:border-[#243440] transition-all hover:shadow-md ${
                   pulseCartItemId === item.cartItemId
                     ? "shopsphere-cart-pulse"
                     : ""
                 }`}
               >
-                <div className="flex gap-4 md:gap-6">
+                <div className="cart-item-layout flex gap-3 sm:gap-4 md:gap-6">
                   {/* Product Image */}
-                  <div className="flex-shrink-0 w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#1a262f]">
+                  <div className="cart-item-image flex-shrink-0 w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden bg-gray-100 dark:bg-[#1a262f]">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
@@ -487,7 +487,7 @@ function CartPage() {
                   {/* Product Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
                         <h3 className="font-medium text-gray-900 dark:text-slate-100 text-base sm:text-lg line-clamp-2">
                           {item.productName}
                         </h3>
@@ -572,7 +572,7 @@ function CartPage() {
                       </div>
 
                       {/* Price */}
-                      <div className="text-right sm:text-right">
+                      <div className="cart-item-price text-right sm:text-right">
                   <p className="text-xs text-gray-500 dark:text-slate-400">
                     ₹{formatINR(item.price)} each
                   </p>
@@ -597,7 +597,7 @@ function CartPage() {
                     </div>
 
                     {/* Quantity Controls & Remove */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-[#243440]">
+                    <div className="cart-item-controls flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-[#243440]">
                       <div className="flex items-center gap-2 sm:gap-3">
                         <span className="text-xs sm:text-sm text-gray-500 dark:text-slate-400">
                           Qty:
@@ -691,13 +691,13 @@ function CartPage() {
                       return (
                         <div
                           key={offer.offer_id}
-                          className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                          className={`cart-offer-row flex items-center justify-between p-3 rounded-lg transition-all ${
                             isApplied
                               ? "bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30"
                               : "bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30"
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="cart-offer-copy flex items-center gap-3">
                             <i
                               className={`pi ${isApplied ? "pi-check-circle text-green-600" : "pi-tag text-amber-600"}`}
                             />
@@ -715,7 +715,7 @@ function CartPage() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="cart-offer-actions flex items-center gap-2">
                             <Tag
                               value={
                                 offer.discount_type === "percentage"
@@ -729,7 +729,7 @@ function CartPage() {
                                 label="Apply"
                                 size="small"
                                 onClick={() => applyProductOffer(offer)}
-                                className="!bg-amber-600 !border-amber-600 hover:!bg-amber-700 !text-white !text-xs !px-2 !py-1"
+                                className="cart-offer-apply-button !bg-amber-600 !border-amber-600 hover:!bg-amber-700 !text-white"
                               />
                             )}
                             {isApplied && (
@@ -764,7 +764,7 @@ function CartPage() {
                         return (
                           <div
                             key={offer.offer_id}
-                            className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                            className={`cart-offer-row flex items-center justify-between p-3 rounded-lg transition-all ${
                               isApplied
                                 ? "bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30"
                                 : isApplicable
@@ -772,7 +772,7 @@ function CartPage() {
                                   : "bg-gray-100 dark:bg-[#1a262f]/50 opacity-60 border border-gray-200 dark:border-[#243440]"
                             }`}
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="cart-offer-copy flex items-center gap-3">
                               <i
                                 className={`pi ${isApplied ? "pi-check-circle text-green-600" : isApplicable ? "pi-ticket text-[#2f7a6f]" : "pi-lock text-gray-400"}`}
                               />
@@ -793,7 +793,7 @@ function CartPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="cart-offer-actions flex items-center gap-2">
                               <Tag
                                 value={
                                   offer.discount_type === "percentage"
@@ -818,7 +818,7 @@ function CartPage() {
                                       setOfferCode(offer.offer_name);
                                       applyOffer();
                                     }}
-                                    className="!bg-[#2f7a6f] !border-[#2f7a6f] hover:!bg-[#236b62] !text-white !text-xs !px-2 !py-1"
+                                    className="cart-offer-apply-button !bg-[#2f7a6f] !border-[#2f7a6f] hover:!bg-[#236b62] !text-white"
                                   />
                                 )}
                               {isApplied ? (

@@ -32,9 +32,9 @@ function CategorySearchBar({ isLoading, searchText = "", onSearchChange }) {
           : "border-gray-200 bg-white"
       }`}
     >
-      <span className="p-input-icon-left relative block w-full">
+      <span className="p-input-icon-left relative flex w-full items-center">
         <i
-          className={`pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm ${
+          className={`pi pi-search pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sm leading-none ${
             darkMode ? "text-slate-400" : "text-gray-400"
           }`}
         />
@@ -42,7 +42,7 @@ function CategorySearchBar({ isLoading, searchText = "", onSearchChange }) {
           value={searchText}
           onChange={(e) => onSearchChange?.(e.target.value)}
           placeholder="Search products..."
-          className={`category-search-input w-full !pl-10 !pr-3 !py-2.5 !rounded-lg !border !shadow-none focus:!ring-0 ${
+          className={`category-search-input w-full !h-11 !pl-10 !pr-3 !py-0 !leading-[2.75rem] !rounded-lg !border !shadow-none focus:!ring-0 ${
             darkMode
               ? "!bg-[#0f161a] !border-[#223038] !text-slate-100 placeholder:!text-slate-500 focus:!border-[#2f7a6f]"
               : "!bg-white !border-gray-300 !text-gray-800 placeholder:!text-gray-400 focus:!border-[#2f7a6f]"

@@ -238,7 +238,7 @@ function ProductGrid({
 
   return (
     <div className="category-product-grid space-y-6">
-      <div className="category-product-grid-list grid grid-cols-2 gap-6 md:grid-cols-3 xl:grid-cols-4">
+      <div className="category-product-grid-list grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
         {products.map((product) => {
           const rawId =
             product?.product_id ?? product?.id ?? product?.productId;
@@ -275,7 +275,7 @@ function ProductGrid({
                   navigate(`/products/${id}`);
                 }}
               >
-                <div className="flex h-full min-h-[280px] flex-col">
+                <div className="flex h-full min-h-[270px] flex-col sm:min-h-[280px]">
                   <div
                     className={`category-product-media product-image-wrap relative h-32 w-full overflow-hidden ${
                       darkMode ? "bg-[#1b242b]" : "bg-gray-100"
@@ -353,7 +353,7 @@ function ProductGrid({
                         }
 
                         return (
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                             <p className="font-bold text-amber-600">
                               {"\u20B9"}
                               {effectiveDiscounted.toLocaleString("en-IN")}
@@ -413,7 +413,7 @@ function ProductGrid({
                           }
                         }}
                         disabled={isAdding}
-                        className={`outline-none !w-full !px-4 !py-2.5 !bg-transparent !border !border-[var(--primary-color)] !text-[var(--primary-color)] ${
+                        className={`outline-none !w-full !px-2 !py-2.5 !text-sm sm:!px-4 !bg-transparent !border !border-[var(--primary-color)] !text-[var(--primary-color)] ${
                           isRecentlyAdded ? "shopsphere-added-btn" : ""
                         }`}
                       />

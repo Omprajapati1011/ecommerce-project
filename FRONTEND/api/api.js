@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000")
+  .replace(/\/+$/, "");
+
 const api = axios.create({
-  baseURL:"http://localhost:3000/api",
+  baseURL: `${apiBaseUrl}/api`,
   withCredentials: true, // important for refresh cookies
 });
 //  Attach access token

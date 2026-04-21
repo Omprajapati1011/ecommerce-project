@@ -199,7 +199,7 @@ function CategoryFilterSidebar({
 
   return (
     <div
-      className={`category-filter-panel w-full lg:w-72 rounded-2xl border p-5 lg:sticky lg:top-28 ${
+      className={`category-filter-panel w-full rounded-2xl border p-4 sm:p-5 lg:sticky lg:top-28 lg:w-72 ${
         darkMode
           ? "border-[#1f2933] bg-[#151e22] text-slate-200"
           : "border-gray-200 bg-white text-gray-800"
@@ -294,7 +294,7 @@ function CategoryFilterSidebar({
               <span>₹{priceRange[1]}</span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="category-price-inputs flex items-center gap-3">
               <InputNumber
                 value={priceRange[0]}
                 onValueChange={(e) =>

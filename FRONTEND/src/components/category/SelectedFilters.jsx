@@ -39,7 +39,7 @@ function SelectedFilters({
   if (!hasAny) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="selected-filters-row flex min-w-0 flex-wrap gap-2">
       {categoryTags.map((tag) => (
         <Chip
           key={tag.id}

@@ -117,6 +117,7 @@ export default function OrderConfirmationCODComponent() {
         currency: "INR",
       });
 
+      await api.delete("/cart/items");
       clearPendingCheckout();
       window.dispatchEvent(new CustomEvent("cart:updated"));
       navigate("/checkout/success", {

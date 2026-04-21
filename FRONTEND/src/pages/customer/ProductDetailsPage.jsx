@@ -754,7 +754,7 @@ function ProductDetailsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-5 pt-0">
         <Skeleton width="16rem" height="1rem" />
         <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <Card className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-[#1f2933] dark:bg-[#151e22]">
@@ -793,7 +793,7 @@ function ProductDetailsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 pt-0">
       <Toast ref={toastRef} position="top-right" />
       <Dialog
         visible={Boolean(selectedOffer)}
@@ -1036,17 +1036,9 @@ function ProductDetailsPage() {
 
       <nav
         aria-label="Breadcrumb"
-        className="flex flex-wrap items-center justify-between gap-3 text-sm"
+        className="product-detail-breadcrumb-shell flex flex-col items-start gap-3 text-sm"
       >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 transition hover:border-amber-300 hover:text-amber-700 dark:border-[#1f2933] dark:bg-[#151e22] dark:text-slate-300 dark:hover:border-amber-500/40 dark:hover:text-amber-300"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back
-        </button>
-        <ol className="flex flex-wrap items-center gap-2 text-gray-500 dark:text-slate-400">
+        <ol className="product-detail-breadcrumb-list flex flex-wrap items-center gap-2 text-gray-500 dark:text-slate-400">
           <li><Link to="/" className="hover:text-amber-600">Home</Link></li>
           {breadcrumbTrail.map((item) => (
             <li key={item.category_id} className="flex items-center gap-2">
@@ -1059,10 +1051,18 @@ function ProductDetailsPage() {
             <span>{product.display_name || product.name}</span>
           </li>
         </ol>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 font-medium text-gray-700 transition hover:border-amber-300 hover:text-amber-700 dark:border-[#1f2933] dark:bg-[#151e22] dark:text-slate-300 dark:hover:border-amber-500/40 dark:hover:text-amber-300"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back
+        </button>
       </nav>
 
-      <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-        <Card className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-[#1f2933] dark:bg-[#151e22]">
+      <div className="product-detail-hero-grid grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(380px,0.88fr)] xl:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">
+        <Card className="product-detail-media-card rounded-2xl border border-gray-100 bg-white p-3 sm:p-4 dark:border-[#1f2933] dark:bg-[#151e22]">
           <div
             className="relative overflow-hidden rounded-xl border border-gray-100 bg-gray-50 dark:border-[#1f2933] dark:bg-[#10171b]"
             onTouchStart={(event) => {
@@ -1078,19 +1078,19 @@ function ProductDetailsPage() {
               <button
                 type="button"
                 onClick={() => setTapZoom((prev) => !prev)}
-                className="group h-[450px] w-full overflow-hidden md:h-[560px]"
+                className="product-detail-main-image group h-[300px] w-full overflow-hidden sm:h-[380px] md:h-[430px] lg:h-[430px] xl:h-[460px]"
                 aria-label="Toggle image zoom"
               >
                 <img
                   src={activeImage.image_url}
                   alt={product.display_name || product.name}
                   className={`h-full w-full object-contain transition-transform duration-300 ${
-                    tapZoom ? "scale-150" : "scale-100 group-hover:scale-125"
+                    tapZoom ? "scale-125" : "scale-100 group-hover:scale-105"
                   }`}
                 />
               </button>
             ) : (
-              <div className="flex h-[450px] items-center justify-center text-gray-500 dark:text-slate-400">
+              <div className="product-detail-main-image flex h-[300px] items-center justify-center text-gray-500 sm:h-[380px] md:h-[430px] lg:h-[430px] xl:h-[460px] dark:text-slate-400">
                 No image available
               </div>
             )}
@@ -1138,16 +1138,16 @@ function ProductDetailsPage() {
           </div>
         </Card>
 
-        <Card className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-[#1f2933] dark:bg-[#151e22]">
+        <Card className="product-detail-info-card product-detail-purchase-panel rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 dark:border-[#1f2933] dark:bg-[#151e22]">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="font-serif text-3xl text-gray-900 dark:text-slate-100">
+            <div className="min-w-0">
+              <h1 className="font-serif text-2xl leading-tight text-gray-900 sm:text-3xl dark:text-slate-100">
                 {product.display_name || product.name}
               </h1>
               <p className="mt-2 text-sm text-gray-600 dark:text-slate-300">
                 {product.short_description || product.description}
               </p>
-              <div className="mt-3 flex items-center gap-3">
+              <div className="mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
                 <div className="flex items-center gap-1 text-amber-500">
                   {Array.from({ length: 5 }).map((_, idx) => (
                     <Star
@@ -1339,14 +1339,14 @@ function ProductDetailsPage() {
             </div>
           )}
 
-          <div ref={ctaAnchorRef} className="mt-6 rounded-xl border border-gray-200 p-4 dark:border-[#1f2933]">
+          <div ref={ctaAnchorRef} className="product-detail-cta mt-6 rounded-xl border border-gray-200 p-3 sm:p-4 dark:border-[#1f2933]">
             {quantityInCart > 0 && (
               <p className="mb-2 text-xs font-medium text-emerald-700">
                 {quantityInCart} already in cart
               </p>
             )}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="inline-flex items-center rounded-lg border border-gray-200 dark:border-[#1f2933]">
+            <div className="product-detail-cta-actions flex flex-wrap items-center gap-3">
+              <div className="product-detail-qty inline-flex items-center rounded-lg border border-gray-200 dark:border-[#1f2933]">
                 <button
                   type="button"
                   className="px-3 py-2 text-gray-700 dark:text-slate-300"
@@ -1370,19 +1370,19 @@ function ProductDetailsPage() {
                 onClick={handleAddToCart}
                 disabled={outOfStock || addLoading}
                 label={addLoading ? "Adding..." : "Add to Cart"}
-                className="!rounded-xl !bg-amber-600 !px-5 !py-3 !text-white hover:!bg-amber-700"
+                className="product-detail-action-button !rounded-xl !bg-amber-600 !px-5 !py-3 !text-white hover:!bg-amber-700"
               />
               <Button
                 type="button"
                 onClick={handleBuyNow}
                 disabled={outOfStock || buyLoading}
                 label={buyLoading ? "Processing..." : "Buy Now"}
-                className="!rounded-xl !bg-[#163332] !px-5 !py-3 !text-white hover:!bg-[#102a29]"
+                className="product-detail-action-button !rounded-xl !bg-[#163332] !px-5 !py-3 !text-white hover:!bg-[#102a29]"
               />
               <button
                 type="button"
                 onClick={handleToggleWishlist}
-                className={`rounded-xl border px-4 py-3 text-sm ${
+                className={`product-detail-secondary-action rounded-xl border px-4 py-3 text-sm ${
                   wishlistSaved
                     ? "border-red-300 bg-red-50 text-red-700"
                     : "border-gray-200 text-gray-700 dark:border-[#1f2933] dark:text-slate-300"
@@ -1395,7 +1395,7 @@ function ProductDetailsPage() {
               <button
                 type="button"
                 onClick={handleShare}
-                className="rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 dark:border-[#1f2933] dark:text-slate-300"
+                className="product-detail-secondary-action rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 dark:border-[#1f2933] dark:text-slate-300"
                 aria-label="Share product"
               >
                 <Share2 className="mr-1 inline h-4 w-4" />
@@ -1406,20 +1406,20 @@ function ProductDetailsPage() {
         </Card>
       </div>
 
-      <Card className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-[#1f2933] dark:bg-[#151e22]">
-        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="overflow-hidden rounded-[28px] border border-amber-200/70 bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.18),_transparent_58%),linear-gradient(145deg,rgba(255,248,238,0.96),rgba(255,237,213,0.86))] p-5 dark:border-amber-600/25 dark:bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.12),_transparent_55%),linear-gradient(145deg,rgba(21,30,34,0.98),rgba(16,23,27,0.92))]">
+      <Card className="product-detail-content-card rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 dark:border-[#1f2933] dark:bg-[#151e22]">
+        <div className="product-detail-details-grid grid gap-6">
+          <aside className="product-detail-section-nav">
+            <div className="product-detail-nav-card overflow-hidden rounded-2xl border border-amber-200/70 bg-[linear-gradient(145deg,rgba(255,248,238,0.96),rgba(255,237,213,0.86))] p-4 dark:border-amber-600/25 dark:bg-[linear-gradient(145deg,rgba(21,30,34,0.98),rgba(16,23,27,0.92))]">
               <p className="text-xs uppercase tracking-[0.24em] text-amber-700/80 dark:text-amber-300/80">
                 Product Details
               </p>
-              <h2 className="mt-3 font-serif text-2xl text-gray-900 dark:text-slate-100">
+              <h2 className="mt-2 font-serif text-xl text-gray-900 dark:text-slate-100">
                 Everything in one place
               </h2>
-              <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-slate-300">
+              <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-slate-300">
                 Scan the essentials, compare available configurations, and review purchase notes without leaving the PDP.
               </p>
-              <div className="mt-5 space-y-2">
+              <div className="product-detail-nav-actions mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                 {detailSections.map((section) => {
                   const Icon = section.icon;
                   return (
@@ -1427,9 +1427,9 @@ function ProductDetailsPage() {
                       key={section.id}
                       type="button"
                       onClick={() => scrollToDetailSection(section.id)}
-                      className="flex w-full items-center gap-3 rounded-2xl border border-white/70 bg-white/75 px-4 py-3 text-left text-sm font-medium text-gray-800 transition hover:-translate-y-0.5 hover:border-amber-300 hover:text-amber-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:border-amber-500/40 dark:hover:text-amber-300"
+                      className="flex items-center gap-2 rounded-xl border border-white/70 bg-white/75 px-3 py-2 text-left text-sm font-medium text-gray-800 transition hover:border-amber-300 hover:text-amber-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:border-amber-500/40 dark:hover:text-amber-300"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-[#2f7a6f] text-white shadow-lg shadow-amber-500/15">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-[#2f7a6f] text-white shadow-lg shadow-amber-500/15">
                         <Icon className="h-4 w-4" />
                       </span>
                       <span>{section.label}</span>
@@ -1965,11 +1965,11 @@ function ProductDetailsPage() {
 
       {showStickyBar && !isBottomVisible && (
         <div
-          className={`fixed bottom-0 left-0 right-0 z-30 border-t px-4 py-3 shadow-lg ${
+          className={`fixed bottom-0 left-0 right-0 z-30 border-t px-4 py-3 shadow-lg md:hidden ${
             darkMode ? "border-[#1f2933] bg-[#151e22]/95" : "border-amber-200 bg-[#fff8ee]/95"
           }`}
         >
-          <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 md:px-8 lg:px-12">
+          <div className="product-detail-sticky-inner mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 md:px-8 lg:px-12">
             <div>
               <p className="text-xs uppercase tracking-[0.12em] text-gray-500 dark:text-slate-400">Price</p>
               <p className="font-accent text-xl font-semibold">{formatINR(effectivePrice)}</p>
@@ -1979,7 +1979,7 @@ function ProductDetailsPage() {
               onClick={handleAddToCart}
               disabled={outOfStock || addLoading}
               label={addLoading ? "Adding..." : "Add to Cart"}
-              className="!rounded-xl !bg-amber-600 !px-5 !py-3 !text-white hover:!bg-amber-700"
+              className="product-detail-sticky-button !rounded-xl !bg-amber-600 !px-5 !py-3 !text-white hover:!bg-amber-700"
             />
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { findOrderItems, updateOrderStatusLocally } from "../../../../redux/slices/orderSlice";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -78,6 +78,7 @@ export default function OrderDetailComponents({
   const [statusSaving, setStatusSaving] = useState(false);
   const [statusError, setStatusError] = useState("");
   const [reasonDialogVisible, setReasonDialogVisible] = useState(false);
+  const orderItemsTopRef = useRef(null);
 
   const isAdmin = currentUser?.role === "admin";
   const orderData = currentOrderData || resolvedOrderData;
@@ -118,6 +119,12 @@ export default function OrderDetailComponents({
     const limit = event.rows;
     setFirst(event.first);
     dispatch(findOrderItems({ id: resolvedOrderId, page, limit }));
+    requestAnimationFrame(() => {
+      orderItemsTopRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   };
 
   const handleClose = () => {
@@ -347,7 +354,7 @@ export default function OrderDetailComponents({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div>
+        <div ref={orderItemsTopRef}>
           <Card
             className="order-flow-card"
             pt={{ body: { className: "p-0" }, content: { className: "p-0" } }}

@@ -62,7 +62,7 @@ function FooterNavLink({ href, label, pathname, search }) {
     return (
       <span
         aria-current="page"
-        className="cursor-default text-sm font-medium text-amber-600 dark:text-amber-400"
+        className="footer-link cursor-default text-sm font-medium text-amber-600 dark:text-amber-400"
       >
         {label}
       </span>
@@ -71,7 +71,7 @@ function FooterNavLink({ href, label, pathname, search }) {
   return (
     <Link
       to={href}
-      className="text-sm text-gray-500 transition-colors hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400"
+      className="footer-link text-sm text-gray-500 transition-colors hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400"
     >
       {label}
     </Link>
@@ -82,52 +82,52 @@ function Footer() {
   const { pathname, search } = useLocation();
 
   return (
-    <footer className="mt-auto border-t border-gray-200 bg-white dark:border-[#1f2933] dark:bg-[#0f1519]">
+    <footer className="shopsphere-footer mt-auto border-t border-gray-200 bg-white dark:border-[#1f2933] dark:bg-[#0f1519]">
       {/* Main footer body */}
-      <div className="mx-auto w-full max-w-[1280px] px-4 py-12 md:px-8 lg:px-12">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[2.5fr_1fr_1fr_1fr]">
+      <div className="shopsphere-footer-body mx-auto w-full max-w-[1280px] px-4 py-12 md:px-8 lg:px-12">
+        <div className="shopsphere-footer-grid grid gap-10 sm:grid-cols-2 lg:grid-cols-[2.5fr_1fr_1fr_1fr]">
           {/* Brand column */}
-          <div className="space-y-5">
+          <div className="shopsphere-footer-brand space-y-5">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 transition-opacity hover:opacity-80"
+              className="shopsphere-footer-logo inline-flex items-center gap-2 transition-opacity hover:opacity-80"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-600 text-white shadow-md">
+              <span className="shopsphere-footer-logo-icon flex h-9 w-9 items-center justify-center rounded-xl bg-amber-600 text-white shadow-md">
                 <ShoppingBag className="h-5 w-5" />
               </span>
-              <span className="font-serif text-xl font-semibold text-gray-900 dark:text-slate-100">
+              <span className="shopsphere-footer-logo-text font-serif text-xl font-semibold text-gray-900 dark:text-slate-100">
                 ShopSphere
               </span>
             </Link>
 
-            <p className="text-sm leading-relaxed text-gray-500 dark:text-slate-400">
+            <p className="shopsphere-footer-copy text-sm leading-relaxed text-gray-500 dark:text-slate-400">
               Curated products across electronics, fashion, gaming, and home
               appliances. Premium shopping, simplified.
             </p>
 
-            <div className="space-y-2 text-sm text-gray-500 dark:text-slate-400">
-              <div className="flex items-center gap-2">
+            <div className="shopsphere-footer-contact space-y-2 text-sm text-gray-500 dark:text-slate-400">
+              <div className="shopsphere-footer-contact-row flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                 <span>support@shopsphere.in</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="shopsphere-footer-contact-row flex items-center gap-2">
                 <Phone className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                 <span>1800-123-4567 (Toll Free)</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="shopsphere-footer-contact-row flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                 <span>Infocity, Gandhinagar, Gujarat</span>
               </div>
             </div>
 
             {/* Social icons */}
-            <div className="flex gap-2 pt-1">
+            <div className="shopsphere-footer-social flex gap-2 pt-1">
               {socialLinks.map(({ icon: Icon, label, href }) => (
                 <a
                   key={label}
                   href={href}
                   aria-label={label}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition hover:border-amber-400 hover:text-amber-600 dark:border-[#1f2933] dark:text-slate-500 dark:hover:border-amber-500 dark:hover:text-amber-400"
+                  className="shopsphere-footer-social-link flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition hover:border-amber-400 hover:text-amber-600 dark:border-[#1f2933] dark:text-slate-500 dark:hover:border-amber-500 dark:hover:text-amber-400"
                 >
                   <Icon className="h-4 w-4" />
                 </a>
@@ -136,11 +136,11 @@ function Footer() {
           </div>
 
           {/* About */}
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
+          <div className="shopsphere-footer-section">
+            <h4 className="footer-section-title text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
               About
             </h4>
-            <ul className="mt-4 space-y-2.5">
+            <ul className="footer-link-list mt-4 space-y-2.5">
               {aboutLinks.map((item) => (
                 <li key={item.label}>
                   <FooterNavLink
@@ -155,11 +155,11 @@ function Footer() {
           </div>
 
           {/* Help */}
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
+          <div className="shopsphere-footer-section">
+            <h4 className="footer-section-title text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
               Help
             </h4>
-            <ul className="mt-4 space-y-2.5">
+            <ul className="footer-link-list mt-4 space-y-2.5">
               {helpLinks.map((item) => (
                 <li key={item.label}>
                   <FooterNavLink
@@ -174,11 +174,11 @@ function Footer() {
           </div>
 
           {/* Consumer Policy */}
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
+          <div className="shopsphere-footer-section">
+            <h4 className="footer-section-title text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
               Consumer Policy
             </h4>
-            <ul className="mt-4 space-y-2.5">
+            <ul className="footer-link-list mt-4 space-y-2.5">
               {policyLinks.map((item) => (
                 <li key={item.label}>
                   <FooterNavLink
@@ -195,19 +195,19 @@ function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-gray-200 dark:border-[#1f2933]">
-        <div className="mx-auto flex w-full max-w-[1280px] flex-col items-center gap-4 px-4 py-5 md:flex-row md:justify-between md:px-8 lg:px-12">
-          <p className="text-xs text-gray-400 dark:text-slate-500">
+      <div className="shopsphere-footer-bottom border-t border-gray-200 dark:border-[#1f2933]">
+        <div className="shopsphere-footer-bottom-inner mx-auto flex w-full max-w-[1280px] flex-col items-center gap-4 px-4 py-5 md:flex-row md:justify-between md:px-8 lg:px-12">
+          <p className="shopsphere-footer-copyright text-xs text-gray-400 dark:text-slate-500">
             &copy; {new Date().getFullYear()} ShopSphere, Inc. All rights
             reserved.
           </p>
 
           {/* Payment methods */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="shopsphere-footer-payments flex flex-wrap items-center gap-1.5">
             {paymentMethods.map((method) => (
               <span
                 key={method}
-                className="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold text-gray-500 dark:border-[#1f2933] dark:bg-[#151e22] dark:text-slate-500"
+                className="shopsphere-payment-chip rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold text-gray-500 dark:border-[#1f2933] dark:bg-[#151e22] dark:text-slate-500"
               >
                 {method}
               </span>

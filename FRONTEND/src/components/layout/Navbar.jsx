@@ -208,10 +208,10 @@ function Navbar({ categoryTree = [] }) {
 
           <Link
             to="/"
-            className={`inline-flex items-center gap-2 font-serif text-2xl font-semibold tracking-tight ${darkMode ? "text-slate-100" : "text-gray-900"}`}
+            className={`shopsphere-brand-link inline-flex min-w-0 items-center gap-2 font-serif text-2xl font-semibold tracking-tight ${darkMode ? "text-slate-100" : "text-gray-900"}`}
           >
-            <img src="/logo.svg" alt="ShopSphere" className="h-8 w-8" />
-            <span>ShopSphere</span>
+            <img src="/logo.svg" alt="ShopSphere" className="h-8 w-8 shrink-0" />
+            <span className="shopsphere-brand-text truncate">ShopSphere</span>
           </Link>
 
           <form
@@ -229,7 +229,7 @@ function Navbar({ categoryTree = [] }) {
             />
           </form>
 
-          <nav className="ml-auto flex items-center gap-3 font-accent text-sm font-medium md:gap-4">
+          <nav className="ml-auto flex shrink-0 items-center gap-2 font-accent text-sm font-medium sm:gap-3 md:gap-4">
             <Button
               type="button"
               onClick={toggleDarkMode}

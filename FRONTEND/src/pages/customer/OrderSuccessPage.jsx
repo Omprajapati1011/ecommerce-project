@@ -110,6 +110,12 @@ export default function OrderSuccessPage() {
           payment_method: payment.payment_method || "stripe",
           payment_status: payment.status || "completed",
         }));
+        try {
+          await api.delete("/cart/items");
+          window.dispatchEvent(new CustomEvent("cart:updated"));
+        } catch {
+          // Payment is already verified; cart cleanup can be retried elsewhere.
+        }
         clearPendingCheckout();
       } catch (error) {
         if (!active) {

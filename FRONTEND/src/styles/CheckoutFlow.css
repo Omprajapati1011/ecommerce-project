@@ -9,6 +9,12 @@
   padding: 2rem 1rem 4rem;
 }
 
+@media (max-width: 640px) {
+  .order-flow-shell {
+    padding: 1rem 0 3rem;
+  }
+}
+
 /* ── Hero ── */
 .order-flow-hero {
   margin-bottom: 2rem;
@@ -16,6 +22,14 @@
   border-radius: 1.5rem;
   border: 1px solid rgba(214, 192, 144, 0.4);
   background: linear-gradient(135deg, #fff8ee 0%, #fffdf8 100%);
+}
+
+@media (max-width: 640px) {
+  .order-flow-hero {
+    margin-bottom: 1rem;
+    padding: 1.25rem;
+    border-radius: 1rem;
+  }
 }
 .dark .order-flow-hero {
   background: linear-gradient(135deg, #10171b 0%, #151e22 100%);
@@ -68,6 +82,34 @@
   border-radius: 1.25rem;
   border: 1px solid rgba(214, 192, 144, 0.45);
   background: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .order-flow-card {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .order-flow-card-muted {
+    padding: 0.875rem;
+  }
+
+  .order-flow-option {
+    padding: 0.875rem;
+  }
+
+  .order-flow-primary-button,
+  .order-flow-secondary-button,
+  .order-flow-neutral-button {
+    width: 100%;
+    justify-content: center;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .order-flow-title {
+    font-size: 1.5rem;
+  }
 }
 .dark .order-flow-card {
   background: #151e22;

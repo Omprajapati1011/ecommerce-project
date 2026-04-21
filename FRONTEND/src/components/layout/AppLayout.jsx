@@ -51,7 +51,7 @@ function AppLayout() {
       <ScrollToTop />
       <Navbar categoryTree={categoryTree} />
 
-      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-8 md:px-8 lg:px-12">
+      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-8 pt-3 md:px-8 md:pb-10 md:pt-4 lg:px-12 lg:pt-5">
         <Outlet context={{ categoryTree, isCategoryTreeLoading }} />
       </main>
       <Footer />

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
 import { FilterMatchMode } from "primereact/api";
 import { Tag } from "primereact/tag";
@@ -52,6 +53,7 @@ export default function OrdersPage({ showToast }) {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const ordersTopRef = useRef(null);
   const skipInitialFetchRef = useRef(
     sortField === DEFAULT_ORDER_SORT_FIELD &&
       sortOrder === DEFAULT_ORDER_SORT_ORDER &&
@@ -96,6 +98,7 @@ export default function OrdersPage({ showToast }) {
     const limit = event.rows;
     setFirst(event.first);
     dispatch(fetchOrders({ page, limit, sortField, sortOrder }));
+    scrollToOrdersTop();
   };
 
   const onSort = (event) => {
@@ -137,6 +140,25 @@ export default function OrdersPage({ showToast }) {
       return String(left ?? "").localeCompare(String(right ?? "")) * direction;
     });
   }, [orders, sortField, sortOrder]);
+
+  const totalRecords = pagination?.totalItems || orderCount || 0;
+  const rowsPerPage = pagination?.itemsPerPage || DEFAULT_ORDER_ROWS;
+  const canGoPrevious = first > 0;
+  const canGoNext = first + rowsPerPage < totalRecords;
+
+  const openOrder = (order) => {
+    setSelectedOrder(order);
+    setShowOrderDialog(true);
+  };
+
+  const scrollToOrdersTop = () => {
+    requestAnimationFrame(() => {
+      ordersTopRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
 
   if (loading && !orderCount) {
     return <div className="order-flow-empty">Loading your orders...</div>;
@@ -182,7 +204,7 @@ export default function OrdersPage({ showToast }) {
         <div className="order-flow-card-muted min-w-[190px] px-4 py-3 text-left">
           <p className="order-flow-stat-label">Total Orders</p>
           <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-slate-100">
-            {pagination?.totalItems || orderCount || 0}
+            {totalRecords}
           </p>
         </div>
       </div>
@@ -190,76 +212,162 @@ export default function OrdersPage({ showToast }) {
   );
 
   return (
-    <div className="orders-page-wrapper animate-fade-in">
+    <div ref={ordersTopRef} className="orders-page-wrapper animate-fade-in">
       <div className="orders-card admin-products-table-wrapper flex-1 flex flex-col min-h-0">
-        <DataTable
-          value={sortedOrders}
-          lazy
-          paginator
-          scrollable
-          scrollHeight="52vh"
-          rows={pagination?.itemsPerPage || DEFAULT_ORDER_ROWS}
-          first={first}
-          rowsPerPageOptions={[5, 10, 25, 50]}
-          responsiveLayout="stack"
-          breakpoint="960px"
-          stripedRows
-          tableStyle={{ width: "100%" }}
-          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-          totalRecords={pagination?.totalItems || 0}
-          onPage={onPage}
-          onSort={onSort}
-          sortField={sortField}
-          sortOrder={sortOrder}
-          dataKey="order_id"
-          filterDisplay="row"
-          filters={filters}
-          loading={loading}
-          onRowClick={(e) => {
-            setSelectedOrder(e.data);
-            setShowOrderDialog(true);
-          }}
-          className="cursor-pointer admin-products-table orders-main-table-scrollable"
-          globalFilterFields={[
-            "order_number",
-            "order_status",
-            "payment_status",
-            "created_at",
-          ]}
-          header={header}
-          emptyMessage="No Order found."
-        >
-          <Column field="order_id" sortable header="ID" />
+        <div className="orders-mobile-list md:hidden">
+          {header}
+          <div className="mt-4 space-y-3">
+            {sortedOrders.length === 0 ? (
+              <div className="order-flow-empty">No Order found.</div>
+            ) : (
+              sortedOrders.map((order) => (
+                <button
+                  key={order.order_id}
+                  type="button"
+                  onClick={() => openOrder(order)}
+                  className="orders-mobile-card w-full rounded-2xl border border-[#ddcfb7] bg-[#f8f3ea] p-4 text-left shadow-[0_14px_24px_-24px_rgba(15,23,42,0.9)] dark:border-[#243440] dark:bg-[#10171b]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-slate-400">
+                        Order
+                      </p>
+                      <p className="mt-1 truncate text-sm font-bold text-gray-900 dark:text-slate-100">
+                        {order.order_number || `#${order.order_id}`}
+                      </p>
+                    </div>
+                    {statusBodyTemplate(order)}
+                  </div>
 
-          <Column field="order_number" sortable header="Order Number" />
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500 dark:text-slate-400">
+                        Date
+                      </p>
+                      <p className="mt-1 font-semibold text-gray-900 dark:text-slate-100">
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500 dark:text-slate-400">
+                        Total
+                      </p>
+                      <p className="mt-1 font-semibold text-gray-900 dark:text-slate-100">
+                        {formatINR(order.total_amount)}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-gray-500 dark:text-slate-400">
+                        Payment
+                      </p>
+                      <div className="mt-1">{paymentStatusBodyTemplate(order)}</div>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
 
-          <Column
-            field="order_status"
-            header="Order Status"
-            sortable
-            body={statusBodyTemplate}
-          />
+          {totalRecords > rowsPerPage ? (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button
+                type="button"
+                label="Previous"
+                disabled={!canGoPrevious || loading}
+                onClick={() =>
+                  onPage({
+                    first: Math.max(0, first - rowsPerPage),
+                    rows: rowsPerPage,
+                  })
+                }
+                className="!rounded-xl !border !border-gray-200 !bg-white !px-4 !py-2 !text-sm !text-gray-700 disabled:!opacity-50 dark:!border-[#243440] dark:!bg-[#151e22] dark:!text-slate-200"
+              />
+              <span className="text-xs font-semibold text-gray-500 dark:text-slate-400">
+                {Math.floor(first / rowsPerPage) + 1} / {Math.max(1, Math.ceil(totalRecords / rowsPerPage))}
+              </span>
+              <Button
+                type="button"
+                label="Next"
+                disabled={!canGoNext || loading}
+                onClick={() =>
+                  onPage({
+                    first: first + rowsPerPage,
+                    rows: rowsPerPage,
+                  })
+                }
+                className="!rounded-xl !border !border-gray-200 !bg-white !px-4 !py-2 !text-sm !text-gray-700 disabled:!opacity-50 dark:!border-[#243440] dark:!bg-[#151e22] dark:!text-slate-200"
+              />
+            </div>
+          ) : null}
+        </div>
 
-          <Column
-            field="payment_status"
-            header="Payment Status"
-            sortable
-            body={paymentStatusBodyTemplate}
-          />
-          <Column
-            field="created_at"
-            sortable
-            header="Order Date"
-            body={(row) => formatDate(row.created_at)}
-          />
+        <div className="hidden md:block">
+          <DataTable
+            value={sortedOrders}
+            lazy
+            paginator
+            scrollable
+            scrollHeight="52vh"
+            rows={rowsPerPage}
+            first={first}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            responsiveLayout="stack"
+            breakpoint="960px"
+            stripedRows
+            tableStyle={{ width: "100%" }}
+            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+            totalRecords={totalRecords}
+            onPage={onPage}
+            onSort={onSort}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            dataKey="order_id"
+            filterDisplay="row"
+            filters={filters}
+            loading={loading}
+            onRowClick={(e) => openOrder(e.data)}
+            className="cursor-pointer admin-products-table orders-main-table-scrollable"
+            globalFilterFields={[
+              "order_number",
+              "order_status",
+              "payment_status",
+              "created_at",
+            ]}
+            header={header}
+            emptyMessage="No Order found."
+          >
+            <Column field="order_id" sortable header="ID" />
 
-          <Column
-            field="total_amount"
-            sortable
-            header="Total Amount"
-            body={(row) => formatINR(row.total_amount)}
-          />
-        </DataTable>
+            <Column field="order_number" sortable header="Order Number" />
+
+            <Column
+              field="order_status"
+              header="Order Status"
+              sortable
+              body={statusBodyTemplate}
+            />
+
+            <Column
+              field="payment_status"
+              header="Payment Status"
+              sortable
+              body={paymentStatusBodyTemplate}
+            />
+            <Column
+              field="created_at"
+              sortable
+              header="Order Date"
+              body={(row) => formatDate(row.created_at)}
+            />
+
+            <Column
+              field="total_amount"
+              sortable
+              header="Total Amount"
+              body={(row) => formatINR(row.total_amount)}
+            />
+          </DataTable>
+        </div>
       </div>
 
       <Dialog

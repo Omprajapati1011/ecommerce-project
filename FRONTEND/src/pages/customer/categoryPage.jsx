@@ -145,10 +145,12 @@ function CategoryPage() {
   const [totalRecords, setTotalRecords] = useState(0);
   const [priceBounds, setPriceBounds] = useState({ min: 0, max: 0 });
   const [pickerProduct, setPickerProduct] = useState(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const prevFilterSignatureRef = useRef("");
   const productsRequestIdRef = useRef(0);
   const priceRangeRequestIdRef = useRef(0);
   const hasUserPriceSelectionRef = useRef(false);
+  const categoryResultsRef = useRef(null);
   const debouncedPriceRange = useDebouncedValue(priceRange, 300);
   const categoryTree = sharedCategoryTree;
   const treeLoaded = !isSharedCategoryTreeLoading;
@@ -736,6 +738,24 @@ function CategoryPage() {
     setPickerProduct(null);
   };
 
+  const scrollToCategoryResultsTop = () => {
+    requestAnimationFrame(() => {
+      categoryResultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileFiltersOpen]);
+
   return (
     <div className="category-page">
       {pickerProduct && (
@@ -745,26 +765,47 @@ function CategoryPage() {
           onConfirm={handlePickerConfirm}
         />
       )}
-      <div className="container mx-auto px-4 py-8">
-        <div className="category-page-layout flex flex-col lg:flex-row gap-8">
-          <CategoryFilterSidebar
-            isLoading={isTreeLoading}
-            categoryTree={categoryTree}
-            selectedKeys={selectedKeys}
-            onSelectionChange={setSelectedKeys}
-            priceRange={priceRange}
-            minPrice={priceBounds.min}
-            maxPrice={priceBounds.max}
-            onPriceRangeChange={(nextRange) => {
-              hasUserPriceSelectionRef.current = true;
-              setPriceRange(nextRange);
-            }}
-            sortKey={sortKey}
-            sortOptions={sortOptions}
-            onSortChange={setSortKey}
-          />
+      <div className="container mx-auto px-0 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-0">
+        <div className="category-page-layout flex flex-col gap-5 lg:flex-row lg:gap-8">
+          <aside className="hidden lg:block">
+            <CategoryFilterSidebar
+              isLoading={isTreeLoading}
+              categoryTree={categoryTree}
+              selectedKeys={selectedKeys}
+              onSelectionChange={setSelectedKeys}
+              priceRange={priceRange}
+              minPrice={priceBounds.min}
+              maxPrice={priceBounds.max}
+              onPriceRangeChange={(nextRange) => {
+                hasUserPriceSelectionRef.current = true;
+                setPriceRange(nextRange);
+              }}
+              sortKey={sortKey}
+              sortOptions={sortOptions}
+              onSortChange={setSortKey}
+            />
+          </aside>
 
-          <div className="category-results flex-1 space-y-6">
+          <div ref={categoryResultsRef} className="category-results min-w-0 flex-1 space-y-5 sm:space-y-6">
+            <div className="category-mobile-toolbar lg:hidden">
+              <button
+                type="button"
+                className="category-mobile-filter-button"
+                onClick={() => setMobileFiltersOpen(true)}
+              >
+                <i className="pi pi-sliders-h" />
+                <span>Filter & Sort</span>
+                {categoryTags.length || priceTag ? (
+                  <span className="category-mobile-filter-count">
+                    {categoryTags.length + (priceTag ? 1 : 0)}
+                  </span>
+                ) : null}
+              </button>
+              <span className="category-mobile-result-count">
+                {totalRecords || products.length} items
+              </span>
+            </div>
+
             <CategorySearchBar
               isLoading={isTreeLoading}
               searchText={searchText}
@@ -793,13 +834,80 @@ function CategoryPage() {
                 totalRecords: totalRecords,
                 rowsPerPageOptions: [8, 16, 24, 32],
               }}
-              onPageChange={(event) =>
-                setPager({ first: event.first, rows: event.rows })
-              }
+              onPageChange={(event) => {
+                setPager({ first: event.first, rows: event.rows });
+                scrollToCategoryResultsTop();
+              }}
             />
           </div>
         </div>
       </div>
+      {mobileFiltersOpen ? (
+        <div className="category-mobile-filter-shell lg:hidden">
+          <button
+            type="button"
+            className="category-mobile-filter-backdrop"
+            aria-label="Close filters"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+          <section className="category-mobile-filter-panel">
+            <div className="category-mobile-filter-header">
+              <div>
+                <p className="category-mobile-filter-eyebrow">Shop</p>
+                <h2>Filter & Sort</h2>
+              </div>
+              <button
+                type="button"
+                className="category-mobile-filter-close"
+                aria-label="Close filters"
+                onClick={() => setMobileFiltersOpen(false)}
+              >
+                <i className="pi pi-times" />
+              </button>
+            </div>
+            <div className="category-mobile-filter-content">
+              <CategoryFilterSidebar
+                isLoading={isTreeLoading}
+                categoryTree={categoryTree}
+                selectedKeys={selectedKeys}
+                onSelectionChange={setSelectedKeys}
+                priceRange={priceRange}
+                minPrice={priceBounds.min}
+                maxPrice={priceBounds.max}
+                onPriceRangeChange={(nextRange) => {
+                  hasUserPriceSelectionRef.current = true;
+                  setPriceRange(nextRange);
+                }}
+                sortKey={sortKey}
+                sortOptions={sortOptions}
+                onSortChange={setSortKey}
+              />
+            </div>
+            <div className="category-mobile-filter-footer">
+              <button
+                type="button"
+                className="category-mobile-clear-button"
+                onClick={() => {
+                  setSelectedKeys({});
+                  setSearchText("");
+                  handleClearPrice();
+                  setSortKey(":");
+                  setSearchParams({});
+                }}
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                className="category-mobile-apply-button"
+                onClick={() => setMobileFiltersOpen(false)}
+              >
+                Show Products
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
