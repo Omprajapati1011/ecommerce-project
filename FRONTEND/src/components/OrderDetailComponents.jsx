@@ -342,39 +342,39 @@ export default function OrderDetailComponents({
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="order-flow-stat" pt={{ body: { className: "p-0" }, content: { className: "p-0" } }}>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-              <CalendarDays className="h-5 w-5" />
+          <div className="flex items-start gap-2">
+            <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 dark:from-blue-500/20 dark:to-blue-500/10 dark:text-blue-300">
+              <CalendarDays className="h-4 w-4" />
             </span>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="order-flow-stat-label">Order Date</p>
-              <p className="order-flow-stat-value text-xl">
+              <p className="order-flow-stat-value">
               {formatDate(orderData?.created_at)}
               </p>
             </div>
           </div>
         </Card>
         <Card className="order-flow-stat" pt={{ body: { className: "p-0" }, content: { className: "p-0" } }}>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-              <ReceiptIndianRupee className="h-5 w-5" />
+          <div className="flex items-start gap-2">
+            <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-100 to-green-50 text-green-600 dark:from-green-500/20 dark:to-green-500/10 dark:text-green-300">
+              <ReceiptIndianRupee className="h-4 w-4" />
             </span>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="order-flow-stat-label">Order Total</p>
-              <p className="order-flow-stat-value text-xl">
+              <p className="order-flow-stat-value">
               {formatINR(orderData?.total_amount)}
               </p>
             </div>
           </div>
         </Card>
         <Card className="order-flow-stat" pt={{ body: { className: "p-0" }, content: { className: "p-0" } }}>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-              <PackageCheck className="h-5 w-5" />
+          <div className="flex items-start gap-2">
+            <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 text-purple-600 dark:from-purple-500/20 dark:to-purple-500/10 dark:text-purple-300">
+              <PackageCheck className="h-4 w-4" />
             </span>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="order-flow-stat-label">Items</p>
-              <p className="order-flow-stat-value text-xl">
+              <p className="order-flow-stat-value">
                 {itemPagination?.totalItems || orderItems?.length || 0}
               </p>
             </div>

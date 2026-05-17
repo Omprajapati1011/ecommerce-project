@@ -191,7 +191,7 @@ export default function OrdersPage({ showToast }) {
 
   return (
     <div className="orders-page-wrapper animate-fade-in">
-      <div className="orders-card admin-products-table-wrapper flex-1 flex flex-col min-h-0">
+      <div className="orders-card admin-products-table-wrapper flex-1 flex flex-col min-h-0 overflow-hidden">
         <DataTable
           value={sortedOrders}
           lazy

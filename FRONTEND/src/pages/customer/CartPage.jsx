@@ -459,9 +459,9 @@ function CartPage() {
         <div className="grid gap-8 lg:grid-cols-3 pb-32 lg:pb-0">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {cart.items.map((item) => (
+            {cart.items.map((item, itemIndex) => (
               <div
-                key={item.cartItemId}
+                key={`${item.cartItemId ?? "item"}-${item.productId ?? "product"}-${itemIndex}`}
                 className={`group bg-white dark:bg-[#151e22] rounded-2xl p-4 md:p-6 shadow-sm border border-[#e8dccf] dark:border-[#243440] transition-all hover:shadow-md ${
                   pulseCartItemId === item.cartItemId
                     ? "shopsphere-cart-pulse"
@@ -529,7 +529,7 @@ function CartPage() {
                                     ) || 0;
                                   return (
                                 <Tag
-                                  key={idx}
+                                  key={`${item.cartItemId ?? "item"}-${mod.modifier_id ?? mod.modifierId ?? value}-${idx}`}
                                   value={`${value}${add > 0 ? ` (+₹${add})` : ""}`}
                                   severity="secondary"
                                   className="text-xs"

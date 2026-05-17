@@ -58,7 +58,7 @@ export const Order_master = async (req, res) => {
       return badRequest(res, "Please choose a valid payment method.");
     }
 
-    const summary = await calculateOrderValues(user_id);
+    let summary = await calculateOrderValues(user_id);
 
     const address_id = await getUserAddress(user_id);
     const totalAmount = summary.finalAmount + summary.shipping_amount;
